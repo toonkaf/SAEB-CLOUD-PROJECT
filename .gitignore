@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Env files - ห้าม commit เด็ดขาด
+.env
+.env.local
+**/.env
+**/.env.local
+
+# Build output
+dist/
+**/dist/
+
+# Editor
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
