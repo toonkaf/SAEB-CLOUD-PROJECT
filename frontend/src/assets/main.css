@@ -1,0 +1,36 @@
+.logo {
+    font-family: 'Le Murmure', sans-serif;
+    color: #921B15;
+}
+
+.app-header {
+    height: 5vh;
+    border-bottom: 3px solid #921B15;
+    margin-top: -1.5vh;
+    padding-bottom: 1vh;
+    margin-bottom: 0vh;
+}
+.app-footer {
+    height: 5vh;
+    display: flex;
+    flex-direction: column;
+    align-items: end;
+    border-top: 3px solid #921B15;
+    margin-bottom: -1.5vh;
+    padding-top: 1vh;
+    margin-top: 0vh;
+}
+
+.app-header span {
+    font-size: 30px;
+}
+
+body {
+    font-family: 'Noto Sans Thai', sans-serif; /* ใช้ font อื่นสำหรับเนื้อความ + ภาษาไทย */
+    /* max-height: 90vh; */
+    background: #efe8dc;
+    color: #5c4a3a;
+    padding: 2rem;
+    box-sizing: border-box;
+    /* border: 6px solid #1a1a1a; */
+}
