@@ -1,4 +1,5 @@
 <script setup>
+// import saebIcon from '@/assets/images/SAEB_ICON.png';
 function handleGoogleLogin() {
   // TODO: ต่อ OAuth logic ทีหลัง (Cognito Google Federated / Google Identity Services)
 }
@@ -6,108 +7,124 @@ function handleGoogleLogin() {
 
 <template>
     <div class="home-page">
-        <main class="home-hero">
-        <div class="bg-pattern" aria-hidden="true">
-            <p>Smart AI Exam Brief Smart AI Exam <br>
-                Brief Smart AI Exam Brief <br>
-                Exam Brief Smart AI Exam Brief Smart AI Exam Brief <br>
-                Smart AI Exam Brief Smart AI Exam Brief <br>
-                Brief Smart AI Exam Brief Smart AI Exam Brief <br>
-                Smart AI Exam Brief Smart AI Exam Brief Smart <br>
-                AI Exam Brief AI Smart AI Exam Brief Smart <br>
-                Smart AI Exam Brief
-            </p>
+        <div style="height: 100%; width: 50%; display: flex; align-items: center; justify-content: center;">
+            <img src="@/assets/images/SAEB_ICON.png" class="logo-home">
         </div>
-
-        <h1 class="logo , hero-title">SAEB</h1>
-
-        <button class="login-btn" @click="">
-            Log in with Google OAuth
-            <!-- <span class="arrow">›</span> -->
-        </button>
-        </main>
+        <div class="home-right">
+            <div class="describe">
+                <div class="circle">
+                    <h4 >Smart</h4>
+                </div>
+                <div class="circle">
+                    <h4>AI</h4>
+                </div>
+                <div class="circle">
+                    <h4>Exam</h4>
+                </div>
+                <div class="circle">
+                    <h4>Brief</h4>
+                </div>
+            </div>
+            <br>
+                <button class="arrow-banner">Log In &amp; Register</button>
+        </div>
     </div>
 </template>
 
 <style scoped>
+.home-page{
+    /* width: 80vw; */
+    height: 86vh;
+    /* background-color: aliceblue; */
+    display: flex;
+    flex-wrap: wrap;
+    list-style: none;
+    /* justify-items: flex-start; */
+}
 
-.home-hero {
-    /* background-color: #5c4a3a; */
-    position: relative;
-    height: 80vh;
+.logo-home{
+    width: 75%;
+    margin: 2.5vh 0vw 15vh 10vw;
+    filter: drop-shadow(4px 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+.home-right{
+    height: 100%;
+    width: 50%;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    overflow: hidden;
-    /* font-size: 175px; */
 }
 
-.hero-title {
-    font-size: 450px;
-    color: #921B15;
-    line-height: 1;
-    margin: 0 0 2.5rem;  /* เดิม: 2.5rem — ลดระยะห่างลง */
-    z-index: 1;
-    text-align: center;
-}
-
-
-.bg-pattern {
-    margin-top: -4rem;
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 0.6rem;
-    opacity: 0.5;
-    z-index: -10;
-    pointer-events: none;
-}
-
-.bg-pattern p {
-    font-family: 'Lacquer', sans-serif;
-    font-size: 50px;
-    text-align: center;
-    color: #905E5E;
-    margin: 0;
-    transform: rotate(-1deg);
-}
-
-.login-btn {
-    z-index: 1;
-    display: inline-flex;
+.describe{
+    height: 20%;
+    width: 50%;
+    display: grid;
+    /* background-color: aqua; */
     align-items: center;
-    /* gap: 0.5rem; */
-    background: #7a2222;
-    color: #efe8dc;
+    grid-template-columns: 50% 50%;
+    grid-template-rows: 50% 50%;
+    gap: 12%;
+}
+
+.circle{
+    width: 100%;
+    height: 100%;
+    border: 5px solid black;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.arrow-banner {
+    /* ล้าง default button style */
     border: none;
-    border-radius: 20px;
-    padding: 0.9rem 1.75rem;
-    font-family: 'Lacquer', sans-serif;
-    font-size: 2rem;
-    font-weight: 600;
+    outline: none;
+    font-family: inherit;
+
+    /* style เดิม */
+    position: relative;
+    background: #6b6b1f;
+    color: white;
+    margin-left: 10%;
+    padding: 1.2rem 3rem 1.2rem 2rem;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    clip-path: polygon(0% 0%, 85% 0%, 100% 50%, 85% 100%, 0% 100%);
+
+    /* เพิ่มสำหรับ interactive */
     cursor: pointer;
-    transition: transform 0.15s ease, background 0.15s ease;
+    transition: background 0.15s ease, transform 0.15s ease;
+    height: 7%;
+    width: 60%;
 }
 
-.login-btn:hover {
-    background: #8f2a2a;
-    transform: translateY(-2px);
+.arrow-banner:hover {
+    background: #80801f;
+    transform: translateX(4px);
 }
 
-.arrow {
-    font-size: 1.2rem;
+.arrow-banner:active {
+    transform: translateX(1px);
 }
 
-@media (max-width: 640px) {
-    .hero-title {
-        font-size: 4rem;
-    }
-    .bg-pattern p {
-        font-size: 1rem;
-    }
+/* สำคัญมาก: focus state สำหรับคนใช้ keyboard (Tab) */
+.arrow-banner:focus-visible {
+    outline: 3px solid #a8a860;
+    outline-offset: 3px;
 }
 
+.arrow-banner::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: #a8a860;
+}
 </style>
