@@ -26,7 +26,7 @@ function handleGoogleLogin() {
                 </div>
             </div>
             <br>
-                <button class="arrow-banner">Log In &amp; Register</button>
+                <button class="arrow-banner" @click="$router.push('/login')">Log In &amp; Register</button>
         </div>
     </div>
 </template>
