@@ -7,7 +7,9 @@ import saebIcon from '@/assets/images/SAEB_ICON.png';
 <template>
     <div class="app-layout">
         <header class="app-header">
-            <img :src="saebIcon" alt="SAEB" class="logo-icon" />
+            <RouterLink to="/" aria-label="Go to home">
+                <img :src="saebIcon" alt="SAEB" class="logo-icon" />
+            </RouterLink>
         </header>
 
         <main class="app-main">
