@@ -1,23 +1,42 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import apiClient from '@/services/api'
 
-// Store นี้เตรียมไว้สำหรับ auth ในอนาคต (เช่น Cognito)
-// ตอนนี้ยังไม่ต่อ logic จริง แค่วาง state ไว้ก่อน
 export const useAuthStore = defineStore('auth', () => {
-    const idToken = ref(null)
-    const accessToken = ref(null)
-    const user = ref(null)
+  const token = ref(localStorage.getItem('saeb_token') || null)
+  const user = ref(JSON.parse(localStorage.getItem('saeb_user') || 'null'))
 
-    function setTokens(tokens) {
-        idToken.value = tokens.idToken
-        accessToken.value = tokens.accessToken
+  // ฟังก์ชัน Login ยิงหา Backend Node.js
+  async function login(student_id, password) {
+    try {
+      const response = await apiClient.post('/api/login', {
+        student_id,
+        password
+      })
+
+      const { token: jwtToken, user: userData } = response.data
+
+      // บันทึก State ลง Pinia และ LocalStorage
+      token.value = jwtToken
+      user.value = userData
+
+      localStorage.setItem('saeb_token', jwtToken)
+      localStorage.setItem('saeb_user', JSON.stringify(userData))
+
+      return { success: true, message: response.data.message }
+    } catch (error) {
+      const message = error.response?.data?.message || 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ'
+      return { success: false, message }
     }
+  }
 
-    function logout() {
-        idToken.value = null
-        accessToken.value = null
-        user.value = null
-    }
+  // ฟังก์ชัน Logout
+  function logout() {
+    token.value = null
+    user.value = null
+    localStorage.removeItem('saeb_token')
+    localStorage.removeItem('saeb_user')
+  }
 
-    return { idToken, accessToken, user, setTokens, logout }
+  return { token, user, login, logout }
 })

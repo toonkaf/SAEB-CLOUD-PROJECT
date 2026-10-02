@@ -2,7 +2,7 @@ import axios from 'axios'
 
 // เตรียม baseURL ไว้เรียก backend ในอนาคต
 const apiClient = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL || '',
+    baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000',
     timeout: 10000,
 })
 
