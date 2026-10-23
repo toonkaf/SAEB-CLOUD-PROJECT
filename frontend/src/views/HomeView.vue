@@ -7,10 +7,7 @@ function handleGoogleLogin() {
 
 <template>
     <div class="home-page">
-        <div style="height: 100%; width: 50%; display: flex; align-items: center; justify-content: center;">
-            <img src="@/assets/images/SAEB_ICON.png" class="logo-home">
-        </div>
-        <div class="home-right">
+        <div class="home-hero">
             <div class="describe">
                 <div class="circle">
                     <h4 >Smart</h4>
@@ -26,7 +23,11 @@ function handleGoogleLogin() {
                 </div>
             </div>
             <br>
-                <button class="arrow-banner" @click="$router.push('/login')">Log In &amp; Register</button>
+            <button class="arrow-banner" @click="$router.push('/login')">Log In &amp; Register</button>
+        </div>
+        <div style="height: 100%; width: 50%; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;">
+            <img src="@/assets/images/BG_ICON_MAIN.png" class="logo-home-bg">
+            <img src="@/assets/images/SAEB_ICON_W.png" class="logo-home">
         </div>
     </div>
 </template>
@@ -34,7 +35,7 @@ function handleGoogleLogin() {
 <style scoped>
 .home-page{
     /* width: 80vw; */
-    height: 86vh;
+    height: 84vh;
     /* background-color: aliceblue; */
     display: flex;
     flex-wrap: wrap;
@@ -43,12 +44,22 @@ function handleGoogleLogin() {
 }
 
 .logo-home{
-    width: 75%;
-    margin: 2.5vh 0vw 15vh 10vw;
-    filter: drop-shadow(4px 4px 8px rgba(0, 0, 0, 0.3));
+    width: 60%;
+    margin: 2.5vh 0vw 15vh 8vw;
+    z-index: 1;
+    /* filter: drop-shadow(4px 4px 8px rgba(0, 0, 0, 0.3)); */
+    position: absolute;
+}
+.logo-home-bg{
+    width: 175%;
+    z-index: -1;
+    margin-left: 6vw;
+    object-fit: cover;
+    inset: 0;
+    pointer-events: none;
 }
 
-.home-right{
+.home-hero{
     height: 100%;
     width: 50%;
     display: flex;
@@ -86,7 +97,7 @@ function handleGoogleLogin() {
 
     /* style เดิม */
     position: relative;
-    background: #6b6b1f;
+    background: #921b15;
     color: white;
     margin-left: 10%;
     padding: 1.2rem 3rem 1.2rem 2rem;
@@ -104,7 +115,7 @@ function handleGoogleLogin() {
 }
 
 .arrow-banner:hover {
-    background: #80801f;
+    background: #4d0501;
     transform: translateX(4px);
 }
 
@@ -114,7 +125,7 @@ function handleGoogleLogin() {
 
 /* สำคัญมาก: focus state สำหรับคนใช้ keyboard (Tab) */
 .arrow-banner:focus-visible {
-    outline: 3px solid #a8a860;
+    outline: 3px solid #4d0501;
     outline-offset: 3px;
 }
 
@@ -125,6 +136,6 @@ function handleGoogleLogin() {
     top: 0;
     bottom: 0;
     width: 4px;
-    background: #a8a860;
+    background: #a1524d;
 }
 </style>
