@@ -68,9 +68,9 @@ const navItems = [
     /* background-color: #000; */
 }
 
-/* .app-main {
+.app-main {
     overflow: hidden;
-} */
+}
 
 .logo {
     justify-self: start;
@@ -95,6 +95,7 @@ const navItems = [
     text-decoration: none;
     font-weight: 700;
     /* font-size: 1.5rem; */
+    transition: all 0.2s ease;
 }
 
 .nav-link {
