@@ -2,14 +2,33 @@
 import { RouterLink } from 'vue-router';
 import saebIcon from '@/assets/images/SAEB_ICON.png';
 
+const navItems = [
+    { label: 'Home', to: '/main' },
+    { label: 'AI', to: '/ai' },
+    { label: '+ Upload', to: '/documents' },
+]
+// มาแก้ path เอานะ
 </script>
 
 <template>
     <div class="app-layout">
         <header class="app-header">
-            <RouterLink to="/" aria-label="Go to home">
+            <RouterLink to="/" aria-label="Go to home" class="logo">
                 <img :src="saebIcon" alt="SAEB" class="logo-icon" />
             </RouterLink>
+            
+            <nav class="nav" aria-label="เมนูหลัก">
+                <RouterLink
+                v-for="item in navItems"
+                :key="item.to"
+                :to="item.to"
+                class="nav-link"
+                >
+                {{ item.label }}
+                </RouterLink>
+            </nav>
+
+    <RouterLink to="/login" class="login-link">Login</RouterLink>
         </header>
 
         <main class="app-main">
@@ -24,16 +43,69 @@ import saebIcon from '@/assets/images/SAEB_ICON.png';
 </template>
 
 <style scoped>
-.app-header nav {
+.app-header {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr; /* ซ้าย | กลาง | ขวา */
+    align-items: center;
+    height: 10vh;
+    padding: 0 2rem;
+    border-bottom: 1px solid #000;
+}
+
+.logo {
+    justify-self: start;
     display: flex;
-    gap: 1rem;
-    padding: 1rem;
 }
 
 .logo-icon {
-    width: 3%;
+    height: 5vh;
     aspect-ratio: inherit;
 }
+
+
+.nav {
+    display: flex;
+    align-items: center;
+    gap: 2.5rem;
+}
+
+.nav-link,
+.login-link {
+    color: #000;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 1.5rem;
+}
+
+.nav-link {
+    padding: 0.5rem 1.75rem;
+}
+
+.login-link {
+    justify-self: end;
+}
+
+
+@media (max-width: 720px) {
+    .app-header {
+        height: 72px;
+        padding: 0 1rem;
+    }
+    .brand-icon {
+        height: 40px;
+    }
+    .nav {
+        gap: 0.25rem;
+    }
+    .nav-link,
+    .login-link {
+        font-size: 1rem;
+    }
+    .nav-link {
+        padding: 0.4rem 0.75rem;
+    }
+}
+
 
 
 .app-header {
@@ -43,6 +115,7 @@ import saebIcon from '@/assets/images/SAEB_ICON.png';
     padding-bottom: 1vh;
     margin-bottom: 0vh;
 }
+
 .app-footer {
     height: 2vh;
     display: flex;
