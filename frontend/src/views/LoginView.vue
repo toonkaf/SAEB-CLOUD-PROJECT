@@ -5,18 +5,22 @@ const showPassword = ref(false)
 
 <template>
     <div class="login-page">
-        <div class="login-page">
         <form class="login-card" @submit.prevent>
-            <h1 class="title">Hello!</h1>
-            <p class="subtitle">Sign in with ITKMITL account</p>
+            <div style="display: flex;">
+                <div style="margin-top: auto; margin-bottom: auto;">
+                    <h1 class="title">Hello!</h1>
+                    <p class="subtitle">Sign in with ITKMITL account</p>
+                </div>
+                <img src="@/assets/images/SAEB_ICON.png" class="logo-login">
+            </div>
 
-            <input class="field" type="text" placeholder="Username *" />
+            <input class="field" type="text" placeholder="Username" />
 
             <div class="password">
                 <input
                     class="field"
                     :type="showPassword ? 'text' : 'password'"
-                    placeholder="Password *"
+                    placeholder="Password"
                 />
                 <button
                     type="button"
@@ -38,16 +42,15 @@ const showPassword = ref(false)
             </div>
 
             <button type="submit" class="login-btn">Login</button>
-            <a href="#" class="forgot" @click.prevent>Forgot your password?</a>
+            <!-- <a href="#" class="forgot" @click.prevent>Forgot your password?</a> -->
         </form>
-    </div>
     </div>
 </template>
 
 <style scoped>
 .login-page{
    /* width: 80vw; */
-    height: 86vh;
+    min-height: 84vh;
     /* background-color: aliceblue; */
     display: flex;
     flex-direction: column;
@@ -56,17 +59,17 @@ const showPassword = ref(false)
 
 }
 .login-card {
-    --brown: #5c4a3a;
     --maroon: #8f1b16;
     width: 50vw;
     box-sizing: border-box;
-    padding: 16px;
-    background: rgba(236, 236, 236, 0.85);
+    padding: 50px 16px 50px 16px;
+    background: white;
     border: 1px solid #333;
-    border-radius: 22px;
+    /* border-radius: 22px; */
     box-shadow: 2px 3px 4px rgba(0, 0, 0, 0.45);
-    color: var(--brown);
+    /* color: var(--brown); */
     font-family: inherit;
+    
 }
 
 .title {
@@ -82,6 +85,13 @@ const showPassword = ref(false)
     font-weight: 500;
 }
 
+.logo-login{
+    margin: auto;
+    margin-right: 10px;
+    height: 100px;
+    justify-self: end;
+}
+
 /* ---------- inputs ---------- */
 .field {
     display: block;
@@ -89,23 +99,30 @@ const showPassword = ref(false)
     height: 80px;
     box-sizing: border-box;
     padding: 0 20px;
-    background: #d9d9d9;
     color: var(--brown);
     border: 2px solid transparent;
-    border-radius: 24px;
+    /* border-radius: 24px; */
     font: inherit;
     font-size: 30px;
     outline: none;
+
+    background-color: #F9F9F9;
+    /* color: #000000; */
+    box-shadow: 4px 4px 0px #2C9440;
+    transition: all 0.2s ease;
 }
 
 .field::placeholder {
-    color: var(--brown);
+    color: #B6B6B6;
     opacity: 1;
 }
 
-.field:focus {
-    border-color: var(--maroon);
-}
+/* .field:focus {
+    background-color: #2C9440;
+    color: #ffffff;
+    box-shadow: 6px 6px 0px #F9F9F9;
+    transform: translate(-2px, -2px);
+} */
 
 .field::-ms-reveal,
 .field::-ms-clear {
@@ -127,29 +144,29 @@ const showPassword = ref(false)
     padding: 4px;
     background: none;
     border: none;
-    color: var(--maroon);
+    color: #2C9440;
     cursor: pointer;
 }
 
 /* ---------- buttons ---------- */
 .login-btn {
     display: block;
-    width: 100%;
+    width: 60%;
     height: 48px;
-    margin-top: 34px;
+    margin: 34px auto 0 auto;
     background: var(--maroon);
-    color: #eee;
+    color: white;
     border: none;
-    border-radius: 24px;
+    /* border-radius: 24px; */
     font: inherit;
     font-size: 30px;
     cursor: pointer;
 }
- 
+
 .login-btn:hover {
     filter: brightness(1.15);
 }
- 
+
 .forgot {
     display: block;
     margin: 22px 0 14px;
@@ -158,14 +175,32 @@ const showPassword = ref(false)
     font-size: 17px;
     text-decoration: none;
 }
- 
+
 .forgot:hover {
     text-decoration: underline;
 }
- 
+
+@media (max-width: 900px) {
+    .login-card {
+        width: 92vw;    /* เดิม 50vw แคบเกินไปบนจอเล็ก */
+    }
+}
+
 @media (max-width: 640px) {
     .title {
         font-size: 44px;
+    }
+
+    .login-card {
+        padding: 32px 16px;
+    }
+
+    .logo-login {
+        height: 64px;   /* กันหัวข้อกับโลโก้เบียดกัน */
+    }
+
+    .subtitle {
+        font-size: 14px;
     }
  
     .field,
