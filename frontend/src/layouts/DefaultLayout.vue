@@ -5,7 +5,7 @@ import saebIcon from '@/assets/images/SAEB_ICON.png';
 const navItems = [
     { label: 'Home', to: '/main' },
     { label: 'AI', to: '/ai' },
-    { label: '+ Upload', to: '/documents' },
+    { label: '+ Upload', to: '/uploads' },
 ]
 // มาแก้ path เอานะ
 </script>
