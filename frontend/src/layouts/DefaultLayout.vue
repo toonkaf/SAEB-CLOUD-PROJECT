@@ -47,7 +47,7 @@ const navItems = [
     display: grid;
     grid-template-columns: 1fr auto 1fr; /* ซ้าย | กลาง | ขวา */
     align-items: center;
-    height: 7vh;
+    min-height: 7vh;
     margin-top: -1.5vh;
     margin-bottom: 0vh;
     padding: 0 1.5rem;
@@ -57,7 +57,7 @@ const navItems = [
 }
 
 .app-footer {
-    height: 3vh;
+    min-height: 3vh;
     display: flex;
     flex-direction: column;
     align-items: end;
@@ -69,7 +69,7 @@ const navItems = [
 }
 
 .app-main {
-    overflow: hidden;
+    overflow: hidden; /* ตัดเฉพาะแนวนอน (กันรูปพื้นหลังที่กว้างเกิน) แต่แนวตั้งขยายตามเนื้อหาได้ */
 }
 
 .logo {
@@ -112,25 +112,20 @@ const navItems = [
 }
 
 
-/* @media (max-width: 720px) {
+@media (max-width: 720px) {
     .app-header {
-        height: 72px;
-        padding: 0 1rem;
-    }
-    .brand-icon {
-        height: 40px;
+        padding: 0 0.5rem 1vh;
     }
     .nav {
         gap: 0.25rem;
     }
-    .nav-link,
-    .login-link {
-        font-size: 1rem;
-    }
     .nav-link {
-        padding: 0.4rem 0.75rem;
+        padding: 0.4rem 0.6rem;
     }
-} */
+    .logo-icon {
+        height: 5vh;
+    }
+}
 
 
 </style>

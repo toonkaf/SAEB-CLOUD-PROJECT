@@ -12,7 +12,7 @@ function handleGoogleLogin() {
             <br>
             <button class="banner" @click="$router.push('/login')">Login</button>
         </div>
-        <div style="height: 100%; width: 50%; display: flex; align-items: center; justify-content: center; position: relative; overflow: visible;">
+        <div class="home-visual">
             <img src="@/assets/images/BG_ICON_MAIN.png" class="logo-home-bg">
             <img src="@/assets/images/SAEB_ICON_W.png" class="logo-home">
         </div>
@@ -56,7 +56,7 @@ function handleGoogleLogin() {
     /* background-color: aqua; */
     display: flex;
     flex-direction: column;
-    align-items: left;
+    align-items: flex-start;
     justify-content: center;
 }
 
@@ -93,6 +93,58 @@ function handleGoogleLogin() {
     color: #ffffff;
     box-shadow: 6px 6px 0px #ffffff;
     transform: translate(-2px, -2px);
+}
+
+.home-visual {
+    height: 100%;
+    width: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: visible;
+}
+
+/* ---------- มือถือ / แท็บเล็ตแนวตั้ง ---------- */
+@media (max-width: 768px) {
+    .home-page {
+        height: auto;            /* ปลดล็อก 84vh */
+        flex-direction: column;  /* เรียงบนลงล่าง */
+        flex-wrap: nowrap;
+    }
+
+    .home-hero {
+        width: 100%;
+        height: auto;
+        padding: 2rem 0 0;
+        margin-right: 0;
+        align-items: center;
+    }
+
+    .home-des {
+        width: min(70%, 320px);
+        margin-top: 0;
+    }
+
+    .banner {
+        width: min(80%, 320px);
+        font-size: 1.5rem;
+        padding: 1rem 1.5rem;
+    }
+
+    .home-visual {
+        width: 100%;
+        height: 70vw;  /* กำหนดความสูงเอง เพราะ .logo-home เป็น absolute ไม่ช่วยดันความสูง */
+    }
+
+    .logo-home {
+        width: 55%;
+        margin: 0;
+    }
+
+    .logo-home-bg {
+        width: 120%;   /* เดิม 200% กว้างเกินสำหรับมือถือ */
+    }
 }
 
 </style>
