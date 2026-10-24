@@ -26,7 +26,7 @@ async function handleLogin() {
 
   if (result.success) {
     // เข้าสู่ระบบสำเร็จ ย้ายไปหน้า Dashboard
-    router.push('/dashboard') // เปลี่ยน path เป็นหน้าหลักตามต้องการ
+    router.push('/main') // เปลี่ยน path เป็นหน้าหลักตามต้องการ
   } else {
     // แสดงข้อความ Error ที่ Backend / DynamoDB ส่งกลับมา
     errorMessage.value = result.message
@@ -36,7 +36,7 @@ async function handleLogin() {
 
 <template>
     <div class="login-page">
-        <form class="login-card" @submit.prevent>
+        <form class="login-card" @submit.prevent="handleLogin">
             <div style="display: flex;">
                 <div style="margin-top: auto; margin-bottom: auto;">
                     <h1 class="title">Hello!</h1>
@@ -45,13 +45,14 @@ async function handleLogin() {
                 <img src="@/assets/images/SAEB_ICON.png" class="logo-login">
             </div>
 
-            <input class="field" type="text" placeholder="Username" />
+            <input class="field" type="text" placeholder="Username" v-model="studentId" />
 
             <div class="password">
                 <input
                     class="field"
                     :type="showPassword ? 'text' : 'password'"
                     placeholder="Password"
+                    v-model="password"
                 />
                 <button
                     type="button"
@@ -72,7 +73,11 @@ async function handleLogin() {
                 </button>
             </div>
 
-            <button type="submit" class="login-btn">Login</button>
+            <p v-if="errorMessage" class="error-text">{{ errorMessage }}</p>
+
+            <button type="submit" class="login-btn" :disabled="isLoading">
+                 {{ isLoading ? 'Signing in...' : 'Login' }}
+            </button>
             <!-- <a href="#" class="forgot" @click.prevent>Forgot your password?</a> -->
         </form>
     </div>
@@ -243,5 +248,16 @@ async function handleLogin() {
     .field {
         height: 64px;
     }
+}
+.error-text {
+    margin: 16px 0 0;
+    text-align: center;
+    color: var(--maroon);
+    font-size: 18px;
+}
+
+.login-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 </style>
