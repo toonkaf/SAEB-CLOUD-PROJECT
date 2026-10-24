@@ -1,19 +1,13 @@
 <script setup>
 import { RouterLink } from 'vue-router';
+import saebIcon from '@/assets/images/SAEB_ICON.png';
 
 </script>
 
 <template>
     <div class="app-layout">
         <header class="app-header">
-            <span class="logo">SAEB</span>
-            <!-- <nav>
-                <h2>SAEB</h2
-                <RouterLink to="/" class="title"> SAEB => Smart AI Exam Brief </RouterLink>
-                <RouterLink to="/login">Login</RouterLink>
-                <RouterLink to="/dashboard">Dashboard</RouterLink>
-                <RouterLink to="/documents">เอกสาร</RouterLink>
-            </nav> -->
+            <img :src="saebIcon" alt="SAEB" class="logo-icon" />
         </header>
 
         <main class="app-main">
@@ -32,5 +26,29 @@ import { RouterLink } from 'vue-router';
     display: flex;
     gap: 1rem;
     padding: 1rem;
+}
+
+.logo-icon {
+    width: 3%;
+    aspect-ratio: inherit;
+}
+
+
+.app-header {
+    height: 5vh;
+    /* border-bottom: 3px solid #921B15; */
+    margin-top: -1.5vh;
+    padding-bottom: 1vh;
+    margin-bottom: 0vh;
+}
+.app-footer {
+    height: 2vh;
+    display: flex;
+    flex-direction: column;
+    align-items: end;
+    /* border-top: 3px solid #921B15; */
+    margin-bottom: -1.5vh;
+    padding-top: 1vh;
+    margin-top: 0vh;
 }
 </style>
