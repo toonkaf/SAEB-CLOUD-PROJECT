@@ -26,7 +26,7 @@ async function handleLogin() {
 
   if (result.success) {
     // เข้าสู่ระบบสำเร็จ ย้ายไปหน้า Dashboard
-    router.push('/dashboard') // เปลี่ยน path เป็นหน้าหลักตามต้องการ
+    router.push('/main') // เปลี่ยน path เป็นหน้าหลักตามต้องการ
   } else {
     // แสดงข้อความ Error ที่ Backend / DynamoDB ส่งกลับมา
     errorMessage.value = result.message
@@ -35,60 +35,52 @@ async function handleLogin() {
 </script>
 
 <template>
-  <div class="login-page">
-    <!-- ลบ <div> ซ้อนออก และผูก @submit.prevent กับ handleLogin -->
-    <form class="login-card" @submit.prevent="handleLogin">
-      <h1 class="title">Hello!</h1>
-      <p class="subtitle">Sign in with ITKMITL account</p>
+    <div class="login-page">
+        <form class="login-card" @submit.prevent="handleLogin">
+            <div style="display: flex;">
+                <div style="margin-top: auto; margin-bottom: auto;">
+                    <h1 class="title">Hello!</h1>
+                    <p class="subtitle">Sign in with ITKMITL account</p>
+                </div>
+                <img src="@/assets/images/SAEB_ICON.png" class="logo-login">
+            </div>
 
-      <!-- ผูก v-model="studentId" -->
-      <input
-        v-model="studentId"
-        class="field"
-        type="text"
-        placeholder="Student ID *"
-        required
-      />
+            <input class="field" type="text" placeholder="Username" v-model="studentId" />
 
-      <div class="password">
-        <!-- ผูก v-model="password" -->
-        <input
-          v-model="password"
-          class="field"
-          :type="showPassword ? 'text' : 'password'"
-          placeholder="Password *"
-          required
-        />
-        <button
-          type="button"
-          class="eye"
-          aria-label="Toggle password visibility"
-          @click="showPassword = !showPassword"
-        >
-          <!-- ตาเปิด -->
-          <svg v-if="showPassword" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z" />
-            <circle cx="12" cy="12" r="2.5" />
-          </svg>
-          <!-- ตาปิด -->
-          <svg v-else viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 9c4 5 14 5 18 0" />
-            <path d="M6.5 13.5l-1.5 2.5M12 15v3M17.5 13.5l1.5 2.5" />
-          </svg>
-        </button>
-      </div>
+            <div class="password">
+                <input
+                    class="field"
+                    :type="showPassword ? 'text' : 'password'"
+                    placeholder="Password"
+                    v-model="password"
+                />
+                <button
+                    type="button"
+                    class="eye"
+                    aria-label="Toggle password visibility"
+                    @click="showPassword = !showPassword"
+                >
+                    <!-- ตาเปิด -->
+                    <svg v-if="showPassword" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z" />
+                        <circle cx="12" cy="12" r="2.5" />
+                    </svg>
+                    <!-- ตาปิด -->
+                    <svg v-else viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 9c4 5 14 5 18 0" />
+                        <path d="M6.5 13.5l-1.5 2.5M12 15v3M17.5 13.5l1.5 2.5" />
+                    </svg>
+                </button>
+            </div>
 
-      <!-- แสดงข้อความแจ้งเตือนถ้าเกิด Error -->
-      <p v-if="errorMessage" class="error-text">{{ errorMessage }}</p>
+            <p v-if="errorMessage" class="error-text">{{ errorMessage }}</p>
 
-      <!-- ปุ่ม Login พร้อมสถานะ Loading -->
-      <button type="submit" class="login-btn" :disabled="isLoading">
-        {{ isLoading ? 'Signing in...' : 'Login' }}
-      </button>
-
-      <a href="#" class="forgot" @click.prevent>Forgot your password?</a>
-    </form>
-  </div>
+            <button type="submit" class="login-btn" :disabled="isLoading">
+                 {{ isLoading ? 'Signing in...' : 'Login' }}
+            </button>
+            <!-- <a href="#" class="forgot" @click.prevent>Forgot your password?</a> -->
+        </form>
+    </div>
 </template>
 
 <style scoped>
@@ -245,5 +237,16 @@ async function handleLogin() {
   .field {
     height: 64px;
   }
+}
+.error-text {
+    margin: 16px 0 0;
+    text-align: center;
+    color: var(--maroon);
+    font-size: 18px;
+}
+
+.login-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 </style>
