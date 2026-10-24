@@ -35,83 +35,73 @@ async function handleLogin() {
 </script>
 
 <template>
-  <div class="login-page">
-    <!-- ลบ <div> ซ้อนออก และผูก @submit.prevent กับ handleLogin -->
-    <form class="login-card" @submit.prevent="handleLogin">
-      <h1 class="title">Hello!</h1>
-      <p class="subtitle">Sign in with ITKMITL account</p>
+    <div class="login-page">
+        <form class="login-card" @submit.prevent>
+            <div style="display: flex;">
+                <div style="margin-top: auto; margin-bottom: auto;">
+                    <h1 class="title">Hello!</h1>
+                    <p class="subtitle">Sign in with ITKMITL account</p>
+                </div>
+                <img src="@/assets/images/SAEB_ICON.png" class="logo-login">
+            </div>
 
-      <!-- ผูก v-model="studentId" -->
-      <input
-        v-model="studentId"
-        class="field"
-        type="text"
-        placeholder="Student ID *"
-        required
-      />
+            <input class="field" type="text" placeholder="Username" />
 
-      <div class="password">
-        <!-- ผูก v-model="password" -->
-        <input
-          v-model="password"
-          class="field"
-          :type="showPassword ? 'text' : 'password'"
-          placeholder="Password *"
-          required
-        />
-        <button
-          type="button"
-          class="eye"
-          aria-label="Toggle password visibility"
-          @click="showPassword = !showPassword"
-        >
-          <!-- ตาเปิด -->
-          <svg v-if="showPassword" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z" />
-            <circle cx="12" cy="12" r="2.5" />
-          </svg>
-          <!-- ตาปิด -->
-          <svg v-else viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 9c4 5 14 5 18 0" />
-            <path d="M6.5 13.5l-1.5 2.5M12 15v3M17.5 13.5l1.5 2.5" />
-          </svg>
-        </button>
-      </div>
+            <div class="password">
+                <input
+                    class="field"
+                    :type="showPassword ? 'text' : 'password'"
+                    placeholder="Password"
+                />
+                <button
+                    type="button"
+                    class="eye"
+                    aria-label="Toggle password visibility"
+                    @click="showPassword = !showPassword"
+                >
+                    <!-- ตาเปิด -->
+                    <svg v-if="showPassword" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z" />
+                        <circle cx="12" cy="12" r="2.5" />
+                    </svg>
+                    <!-- ตาปิด -->
+                    <svg v-else viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 9c4 5 14 5 18 0" />
+                        <path d="M6.5 13.5l-1.5 2.5M12 15v3M17.5 13.5l1.5 2.5" />
+                    </svg>
+                </button>
+            </div>
 
-      <!-- แสดงข้อความแจ้งเตือนถ้าเกิด Error -->
-      <p v-if="errorMessage" class="error-text">{{ errorMessage }}</p>
-
-      <!-- ปุ่ม Login พร้อมสถานะ Loading -->
-      <button type="submit" class="login-btn" :disabled="isLoading">
-        {{ isLoading ? 'Signing in...' : 'Login' }}
-      </button>
-
-      <a href="#" class="forgot" @click.prevent>Forgot your password?</a>
-    </form>
-  </div>
+            <button type="submit" class="login-btn">Login</button>
+            <!-- <a href="#" class="forgot" @click.prevent>Forgot your password?</a> -->
+        </form>
+    </div>
 </template>
 
 <style scoped>
-.login-page {
-  height: 86vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+.login-page{
+   /* width: 80vw; */
+    min-height: 84vh;
+    /* background-color: aliceblue; */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
 }
 
 .login-card {
-  --brown: #5c4a3a;
-  --maroon: #8f1b16;
-  width: 50vw;
-  box-sizing: border-box;
-  padding: 16px;
-  background: rgba(236, 236, 236, 0.85);
-  border: 1px solid #333;
-  border-radius: 22px;
-  box-shadow: 2px 3px 4px rgba(0, 0, 0, 0.45);
-  color: var(--brown);
-  font-family: inherit;
+    --maroon: #8f1b16;
+    width: 50vw;
+    box-sizing: border-box;
+    padding: 50px 16px 50px 16px;
+    background: white;
+    border: 1px solid #333;
+    /* border-radius: 22px; */
+    box-shadow: 2px 3px 4px rgba(0, 0, 0, 0.45);
+    /* color: var(--brown); */
+    font-family: inherit;
+    
 }
 
 .title {
@@ -127,30 +117,44 @@ async function handleLogin() {
   font-weight: 500;
 }
 
+.logo-login{
+    margin: auto;
+    margin-right: 10px;
+    height: 100px;
+    justify-self: end;
+}
+
 /* ---------- inputs ---------- */
 .field {
-  display: block;
-  width: 100%;
-  height: 80px;
-  box-sizing: border-box;
-  padding: 0 20px;
-  background: #d9d9d9;
-  color: var(--brown);
-  border: 2px solid transparent;
-  border-radius: 24px;
-  font: inherit;
-  font-size: 30px;
-  outline: none;
+    display: block;
+    width: 100%;
+    height: 80px;
+    box-sizing: border-box;
+    padding: 0 20px;
+    color: var(--brown);
+    border: 2px solid transparent;
+    /* border-radius: 24px; */
+    font: inherit;
+    font-size: 30px;
+    outline: none;
+
+    background-color: #F9F9F9;
+    /* color: #000000; */
+    box-shadow: 4px 4px 0px #2C9440;
+    transition: all 0.2s ease;
 }
 
 .field::placeholder {
-  color: var(--brown);
-  opacity: 1;
+    color: #B6B6B6;
+    opacity: 1;
 }
 
-.field:focus {
-  border-color: var(--maroon);
-}
+/* .field:focus {
+    background-color: #2C9440;
+    color: #ffffff;
+    box-shadow: 6px 6px 0px #F9F9F9;
+    transform: translate(-2px, -2px);
+} */
 
 .field::-ms-reveal,
 .field::-ms-clear {
@@ -163,49 +167,36 @@ async function handleLogin() {
 }
 
 .eye {
-  position: absolute;
-  top: 50%;
-  right: 18px;
-  transform: translateY(-50%);
-  display: grid;
-  place-items: center;
-  padding: 4px;
-  background: none;
-  border: none;
-  color: var(--maroon);
-  cursor: pointer;
+    position: absolute;
+    top: 50%;
+    right: 18px;
+    transform: translateY(-50%);
+    display: grid;
+    place-items: center;
+    padding: 4px;
+    background: none;
+    border: none;
+    color: #2C9440;
+    cursor: pointer;
 }
 
 /* ---------- buttons & messages ---------- */
 .login-btn {
-  display: block;
-  width: 100%;
-  height: 48px;
-  margin-top: 34px;
-  background: var(--maroon);
-  color: #eee;
-  border: none;
-  border-radius: 24px;
-  font: inherit;
-  font-size: 30px;
-  cursor: pointer;
+    display: block;
+    width: 60%;
+    height: 48px;
+    margin: 34px auto 0 auto;
+    background: var(--maroon);
+    color: white;
+    border: none;
+    /* border-radius: 24px; */
+    font: inherit;
+    font-size: 30px;
+    cursor: pointer;
 }
 
-.login-btn:disabled {
-  background: #a37270;
-  cursor: not-allowed;
-}
-
-.login-btn:hover:not(:disabled) {
-  filter: brightness(1.15);
-}
-
-.error-text {
-  color: var(--maroon);
-  margin: 12px 0 0;
-  font-size: 16px;
-  font-weight: 600;
-  text-align: center;
+.login-btn:hover {
+    filter: brightness(1.15);
 }
 
 .forgot {
@@ -221,22 +212,36 @@ async function handleLogin() {
   text-decoration: underline;
 }
 
+@media (max-width: 900px) {
+    .login-card {
+        width: 92vw;    /* เดิม 50vw แคบเกินไปบนจอเล็ก */
+    }
+}
+
 @media (max-width: 640px) {
-  .login-card {
-    width: 90vw;
-  }
+    .title {
+        font-size: 44px;
+    }
 
-  .title {
-    font-size: 44px;
-  }
+    .login-card {
+        padding: 32px 16px;
+    }
 
-  .field,
-  .login-btn {
-    font-size: 22px;
-  }
+    .logo-login {
+        height: 64px;   /* กันหัวข้อกับโลโก้เบียดกัน */
+    }
 
-  .field {
-    height: 64px;
-  }
+    .subtitle {
+        font-size: 14px;
+    }
+ 
+    .field,
+    .login-btn {
+        font-size: 22px;
+    }
+ 
+    .field {
+        height: 64px;
+    }
 }
 </style>
