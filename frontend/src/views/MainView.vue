@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, reactive } from 'vue'
 
 // TODO: แทนที่ mock data นี้ด้วยข้อมูลจริงจาก API ทีหลัง
 const documents = ref([
@@ -17,8 +17,51 @@ const documents = ref([
 
 const searchQuery = ref('')
 
+// ส่วนจัดการ Popup อัปโหลดเอกสาร
+const isOpen = ref(false)
+const form = reactive({
+  courseCode: '',
+  sheetName: '',
+  file: null
+})
+
 function handleAddDocument() {
-  // TODO: เปิด modal หรือ navigate ไปหน้า upload
+  isOpen.value = true // กดแล้วเปิด Modal ขึ้นมา
+}
+
+// ฟังก์ชันเช็คไฟล์ (บังคับรับเฉพาะ .pdf)
+const handleFileChange = (event) => {
+  const selectedFile = event.target.files[0]
+  if (selectedFile) {
+    if (selectedFile.type === 'application/pdf') {
+      form.file = selectedFile
+    } else {
+      alert('กรุณาอัปโหลดเฉพาะไฟล์นามสกุล .pdf เท่านั้นครับ!')
+      event.target.value = ''
+      form.file = null
+    }
+  }
+}
+
+// ฟังก์ชันตอนกดปุ่ม Done ใน Popup
+const handleDone = () => {
+  console.log('ข้อมูลเอกสารที่อัปโหลด:', {
+    courseCode: form.courseCode,
+    sheetName: form.sheetName,
+    fileName: form.file ? form.file.name : null
+  })
+
+  // TODO: เขียนโค้ดส่งข้อมูลฟอร์มและไฟล์ไปให้ Backend ตรงนี้
+  alert('อัปโหลดเอกสารสำเร็จ!')
+  closeModal()
+}
+
+// ฟังก์ชันปิดและล้างค่าในฟอร์ม
+const closeModal = () => {
+  isOpen.value = false
+  form.courseCode = ''
+  form.sheetName = ''
+  form.file = null
 }
 </script>
 
@@ -64,6 +107,57 @@ function handleAddDocument() {
                 </div>
             </div>
             <div class="page-count">page 1</div>
+            </div>
+        </div>
+
+        <!-- POPUP อัปโหลดไฟล์ PDF -->
+        <div v-if="isOpen" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>อัปโหลดชีทเรียน</h2>
+                    <button class="close-btn" @click="closeModal">&times;</button>
+                </div>
+
+                <form @submit.prevent="handleDone" class="modal-form">
+                    <!-- ช่องใส่รหัสวิชา -->
+                    <div class="form-group">
+                        <label>รหัสวิชา</label>
+                        <input 
+                            type="text" 
+                            v-model="form.courseCode" 
+                            placeholder="เช่น 01418111" 
+                            required
+                        />
+                    </div>
+
+                    <!-- ช่องใส่ชื่อชีทเรียน -->
+                    <div class="form-group">
+                        <label>ชื่อชีทเรียน</label>
+                        <input 
+                            type="text" 
+                            v-model="form.sheetName" 
+                            placeholder="เช่น สรุป Lecture บทที่ 1" 
+                            required
+                        />
+                    </div>
+
+                    <!-- ช่องเลือกไฟล์ PDF -->
+                    <div class="form-group">
+                        <label>ไฟล์ PDF (.pdf เท่านั้น)</label>
+                        <input 
+                            type="file" 
+                            accept="application/pdf" 
+                            @change="handleFileChange" 
+                            required
+                        />
+                    </div>
+
+                    <!-- ปุ่มกด Action (ยกเลิก / Done) -->
+                    <div class="modal-actions">
+                        <button type="button" class="cancel-btn" @click="closeModal">ยกเลิก</button>
+                        <button type="submit" class="done-btn">Done</button>
+                    </div>
+                </form>
             </div>
         </div>
 </template>
@@ -192,6 +286,117 @@ function handleAddDocument() {
     font-size: 0.8rem;
     color: #8a7a6a;
     margin: 0.2rem 0 0;
+}
+
+/* Styling for Popup*/
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(58, 47, 38, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+.modal-content {
+    background: #f4efe4;
+    border: 1px solid #d8cdb8;
+    border-radius: 12px;
+    padding: 2rem;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.2rem;
+}
+
+.modal-header h2 {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #3a2f26;
+    margin: 0;
+}
+
+.close-btn {
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #8a7a6a;
+}
+
+.modal-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.form-group label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #3a2f26;
+}
+
+.form-group input[type="text"],
+.form-group input[type="file"] {
+    padding: 0.6rem 0.8rem;
+    border: 1px solid #d8cdb8;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 0.9rem;
+    outline: none;
+    color: #3a2f26;
+}
+
+.form-group input[type="text"]:focus {
+    border-color: #7a2222;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.8rem;
+    margin-top: 1rem;
+}
+
+.cancel-btn {
+    background: #d8cdb8;
+    color: #3a2f26;
+    border: none;
+    border-radius: 8px;
+    padding: 0.6rem 1.2rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.cancel-btn:hover {
+    background: #c5b8a2;
+}
+
+.done-btn {
+    background: #7a2222;
+    color: #efe8dc;
+    border: none;
+    border-radius: 8px;
+    padding: 0.6rem 1.2rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.done-btn:hover {
+    background: #8f2a2a;
 }
 
 @media (max-width: 1024px) {

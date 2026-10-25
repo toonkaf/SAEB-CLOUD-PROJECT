@@ -19,7 +19,7 @@ function hashPassword(password, salt) {
 }
 
 // 1. API สำหรับสมัคร/สร้าง User ทดสอบลง DynamoDB
-app.post('/api/register', async (req, res) => {
+app.post('/register', async (req, res) => {
   const { student_id, email, password } = req.body;
 
   if (!student_id || !password || !email) {
@@ -50,7 +50,7 @@ app.post('/api/register', async (req, res) => {
 });
 
 // 2. API สำหรับ Login (ตรวจสอบกับ DynamoDB)
-app.post('/api/login', async (req, res) => {
+app.post('/login', async (req, res) => {
   const { student_id, password } = req.body;
 
   if (!student_id || !password) {
