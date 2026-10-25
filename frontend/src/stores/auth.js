@@ -9,7 +9,7 @@ export const useAuthStore = defineStore('auth', () => {
   // ฟังก์ชัน Login ยิงหา Backend Node.js
   async function login(student_id, password) {
     try {
-      const response = await apiClient.post('/api/login', {
+      const response = await apiClient.post('/login', {
         student_id,
         password
       })
@@ -25,7 +25,8 @@ export const useAuthStore = defineStore('auth', () => {
 
       return { success: true, message: response.data.message }
     } catch (error) {
-      const message = error.response?.data?.message || 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ'
+      // เพิ่ม error.response?.data?.error เข้าไป
+      const message = error.response?.data?.message || error.response?.data?.error || 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ'
       return { success: false, message }
     }
   }
