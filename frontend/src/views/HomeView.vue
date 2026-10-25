@@ -7,26 +7,14 @@ function handleGoogleLogin() {
 
 <template>
     <div class="home-page">
-        <div style="height: 100%; width: 50%; display: flex; align-items: center; justify-content: center;">
-            <img src="@/assets/images/SAEB_ICON.png" class="logo-home">
-        </div>
-        <div class="home-right">
-            <div class="describe">
-                <div class="circle">
-                    <h4 >Smart</h4>
-                </div>
-                <div class="circle">
-                    <h4>AI</h4>
-                </div>
-                <div class="circle">
-                    <h4>Exam</h4>
-                </div>
-                <div class="circle">
-                    <h4>Brief</h4>
-                </div>
-            </div>
+        <div class="home-hero">
+            <img src="@/assets/images/MAIN_DES.png" class="home-des">
             <br>
-                <button class="arrow-banner" @click="$router.push('/login')">Log In &amp; Register</button>
+            <button class="banner" @click="$router.push('/login')">Login</button>
+        </div>
+        <div class="home-visual">
+            <img src="@/assets/images/BG_ICON_MAIN.png" class="logo-home-bg">
+            <img src="@/assets/images/SAEB_ICON_W.png" class="logo-home">
         </div>
     </div>
 </template>
@@ -34,7 +22,7 @@ function handleGoogleLogin() {
 <style scoped>
 .home-page{
     /* width: 80vw; */
-    height: 86vh;
+    height: 84vh;
     /* background-color: aliceblue; */
     display: flex;
     flex-wrap: wrap;
@@ -42,89 +30,121 @@ function handleGoogleLogin() {
     /* justify-items: flex-start; */
 }
 
+
+
 .logo-home{
-    width: 75%;
-    margin: 2.5vh 0vw 15vh 10vw;
-    filter: drop-shadow(4px 4px 8px rgba(0, 0, 0, 0.3));
+    width: 80%;
+    margin: 2.5vh 0vw 15vh 0;
+    z-index: 1;
+    /* filter: drop-shadow(4px 4px 8px rgba(0, 0, 0, 0.3)); */
+    position: absolute;
+}
+.logo-home-bg{
+    width: 200%;
+    z-index: -1;
+    margin-left: 0;
+    object-fit: cover;
+    inset: 0;
+    pointer-events: none;
 }
 
-.home-right{
+.home-hero{
     height: 100%;
     width: 50%;
+    padding-left: 10%;
+    margin-right: -10%;
+    /* background-color: aqua; */
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
 }
 
-.describe{
-    height: 20%;
-    width: 50%;
-    display: grid;
-    /* background-color: aqua; */
-    align-items: center;
-    grid-template-columns: 50% 50%;
-    grid-template-rows: 50% 50%;
-    gap: 12%;
+.home-des{
+    width: 60%;
+    margin-top: -10vh;
 }
 
-.circle{
-    width: 100%;
-    height: 100%;
-    border: 5px solid black;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.arrow-banner {
-    /* ล้าง default button style */
+.banner {
     border: none;
     outline: none;
     font-family: inherit;
-
-    /* style เดิม */
-    position: relative;
-    background: #6b6b1f;
-    color: white;
-    margin-left: 10%;
-    padding: 1.2rem 3rem 1.2rem 2rem;
-    font-size: 1.5rem;
+    font-style: italic;
+    font-size: 2rem;
+    font-weight: 900;
+    
     display: flex;
     align-items: center;
     justify-content: center;
-    clip-path: polygon(0% 0%, 85% 0%, 100% 50%, 85% 100%, 0% 100%);
-
-    /* เพิ่มสำหรับ interactive */
+    padding: 1.2rem 3rem;
     cursor: pointer;
-    transition: background 0.15s ease, transform 0.15s ease;
-    height: 7%;
-    width: 60%;
+    width: 70%;
+
+    background-color: #ffffff;
+    color: #000000;
+    box-shadow: 4px 4px 0px #2C9440;
+
+    transition: all 0.2s ease;
 }
 
-.arrow-banner:hover {
-    background: #80801f;
-    transform: translateX(4px);
+.banner:hover,
+.banner:focus-visible {
+    background-color: #2C9440;
+    color: #ffffff;
+    box-shadow: 6px 6px 0px #ffffff;
+    transform: translate(-2px, -2px);
 }
 
-.arrow-banner:active {
-    transform: translateX(1px);
+.home-visual {
+    height: 100%;
+    width: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: visible;
 }
 
-/* สำคัญมาก: focus state สำหรับคนใช้ keyboard (Tab) */
-.arrow-banner:focus-visible {
-    outline: 3px solid #a8a860;
-    outline-offset: 3px;
+/* ---------- มือถือ / แท็บเล็ตแนวตั้ง ---------- */
+@media (max-width: 768px) {
+    .home-page {
+        height: auto;            /* ปลดล็อก 84vh */
+        flex-direction: column;  /* เรียงบนลงล่าง */
+        flex-wrap: nowrap;
+    }
+
+    .home-hero {
+        width: 100%;
+        height: auto;
+        padding: 2rem 0 0;
+        margin-right: 0;
+        align-items: center;
+    }
+
+    .home-des {
+        width: min(70%, 320px);
+        margin-top: 0;
+    }
+
+    .banner {
+        width: min(80%, 320px);
+        font-size: 1.5rem;
+        padding: 1rem 1.5rem;
+    }
+
+    .home-visual {
+        width: 100%;
+        height: 70vw;  /* กำหนดความสูงเอง เพราะ .logo-home เป็น absolute ไม่ช่วยดันความสูง */
+    }
+
+    .logo-home {
+        width: 55%;
+        margin: 0;
+    }
+
+    .logo-home-bg {
+        width: 120%;   /* เดิม 200% กว้างเกินสำหรับมือถือ */
+    }
 }
 
-.arrow-banner::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 4px;
-    background: #a8a860;
-}
 </style>

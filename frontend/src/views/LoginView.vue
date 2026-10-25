@@ -127,6 +127,13 @@ async function handleLogin() {
   font-weight: 500;
 }
 
+.logo-login{
+    margin: auto;
+    margin-right: 10px;
+    height: 100px;
+    justify-self: end;
+}
+
 /* ---------- inputs ---------- */
 .field {
   display: block;
