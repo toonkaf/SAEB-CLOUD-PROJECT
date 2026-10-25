@@ -18,9 +18,9 @@ const routes = [
         meta: { requiresAuth: true },
     },
     {
-        path: '/documents',
-        name: 'documents',
-        component: () => import('@/views/DocumentView.vue'),
+        path: '/uploads',
+        name: 'uploads',
+        component: () => import('@/views/UploadView.vue'),
         meta: { requiresAuth: true },
     },
     {

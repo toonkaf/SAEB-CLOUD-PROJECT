@@ -1,13 +1,21 @@
 <script setup>
-import { RouterLink } from 'vue-router';
+import { computed } from 'vue';
+import { RouterLink, useRoute } from 'vue-router';
 import saebIcon from '@/assets/images/SAEB_ICON.png';
+
+const route = useRoute();
 
 const navItems = [
     { label: 'Home', to: '/main' },
     { label: 'AI', to: '/ai' },
-    { label: '+ Upload', to: '/documents' },
+    { label: '+ Upload', to: '/uploads' },
 ]
 // มาแก้ path เอานะ
+
+// เช็คว่าตอนนี้อยู่หน้า Login หรือหน้าแรกสุดหรือไม่ เพื่อสลับปุ่ม Login / Logout
+const isAuthPage = computed(() => {
+    return route.path === '/login' || route.path === '/' || route.path === '/welcome';
+});
 </script>
 
 <template>
@@ -28,7 +36,10 @@ const navItems = [
                 </RouterLink>
             </nav>
 
-    <RouterLink to="/login" class="login-link">Login</RouterLink>
+            <!-- ถ้าอยู่หน้า Login/Welcome จะแสดง Login, ถ้าอยู่หน้าอื่นจะแสดง Logout (ใช้คลาสเดิม login-link) -->
+            <RouterLink :to="isAuthPage ? '/login' : '/login'" class="login-link">
+                {{ isAuthPage ? 'Login' : 'Logout' }}
+            </RouterLink>
         </header>
 
         <main class="app-main">
@@ -126,6 +137,4 @@ const navItems = [
         height: 5vh;
     }
 }
-
-
 </style>
