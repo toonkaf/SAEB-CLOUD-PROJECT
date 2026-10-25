@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const routes = [
     {
@@ -24,6 +25,12 @@ const routes = [
         meta: { requiresAuth: true },
     },
     {
+        path: '/documents',
+        name: 'documents',
+        component: () => import('@/views/DocumentView.vue'),
+        meta: { requiresAuth: true },
+    },
+    {
         path: '/:pathMatch(.*)*',
         name: 'not-found',
         component: () => import('@/views/NotFoundView.vue'),
@@ -35,13 +42,12 @@ const router = createRouter({
     routes,
 })
 
-// Guard เตรียมไว้ล่วงหน้า — ตอนนี้ยังไม่ต่อ backend จริง
-// เมื่อมี auth store ใช้งานจริงแล้ว ค่อย uncomment logic ด้านล่าง
+// ต้อง app.use(pinia) ก่อน app.use(router) ใน main.js
 router.beforeEach((to) => {
-    // const authStore = useAuthStore()
-    // if (to.meta.requiresAuth && !authStore.idToken) {
-    //   return { name: 'login' }
-    // }
+    const authStore = useAuthStore()
+    if (to.meta.requiresAuth && !authStore.token) {
+        return { name: 'login' }
+    }
     return true
 })
 

@@ -1,14 +1,16 @@
+require('dotenv').config(); // ต้องอยู่บรรทัดแรก เพื่อให้ไฟล์อื่นที่ require ทีหลังเห็นค่าใน .env
 const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const { GetCommand, PutCommand } = require('@aws-sdk/lib-dynamodb');
 const { docClient } = require('./config/aws');
-require('dotenv').config();
+const documentsRouter = require('./routes/documents');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use('/documents', documentsRouter);
 
 const USERS_TABLE = 'saeb-users';
 const JWT_SECRET = process.env.JWT_SECRET || 'saeb_jwt_secret_key_2026';
