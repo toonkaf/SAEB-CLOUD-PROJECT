@@ -1,416 +1,436 @@
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, computed } from 'vue'
+import saebIcon from '@/assets/images/SAEB_ICON.png'
 
-// TODO: แทนที่ mock data นี้ด้วยข้อมูลจริงจาก API ทีหลัง
+const searchKeyword = ref('')
+const selectedTagCode = ref(null) // null หมายถึงเลือก "ALL"
+const isAiOpen = ref(false)     // สถานะเปิด-ปิดหน้า Ask AI ฝั่งขวา
+const userMessage = ref('')     // ข้อความแชทกับ AI
+
+// ตัวอย่างเอกสาร
 const documents = ref([
-    { id: 1, title: 'สรุป Discreate บท 1', author: 'coffee' },
-    { id: 2, title: 'สรุป Discreate บท 1', author: 'coffee' },
-    { id: 3, title: 'สรุป Discreate บท 1', author: 'coffee' },
-    { id: 4, title: 'สรุป Discreate บท 1', author: 'coffee' },
-    { id: 5, title: 'สรุป Discreate บท 1', author: 'coffee' },
-    { id: 6, title: 'สรุป Discreate บท 1', author: 'coffee' },
-    { id: 7, title: 'สรุป Discreate บท 1', author: 'coffee' },
-    { id: 8, title: 'สรุป Discreate บท 1', author: 'coffee' },
-    { id: 9, title: 'สรุป Discreate บท 1', author: 'coffee' },
-    { id: 10, title: 'สรุป Discreate บท 1', author: 'coffee' },
+    { id: 1, title: 'Calculus II', pages: 86, uploader: 'P\'Coffee', code: '06066000', checked: true },
+    { id: 2, title: 'Linear Algebra', pages: 64, uploader: 'P\'Latte', code: '06066001', checked: false },
+    { id: 3, title: 'Physics I', pages: 120, uploader: 'P\'Mocha', code: '06066002', checked: false },
+    { id: 4, title: 'Calculus II (Midterm)', pages: 45, uploader: 'P\'Espresso', code: '06066000', checked: true },
+    { id: 5, title: 'Data Structures', pages: 95, uploader: 'P\'Americano', code: '06066003', checked: false },
 ])
 
-const searchQuery = ref('')
-
-// ส่วนจัดการ Popup อัปโหลดเอกสาร
-const isOpen = ref(false)
-const form = reactive({
-  courseCode: '',
-  sheetName: '',
-  file: null
+// รายชื่อรหัสวิชาทั้งหมดสำหรับทำปุ่ม Tag (ดึงแบบไม่ซ้ำ)
+const availableTags = computed(() => {
+    const codes = documents.value.map(doc => doc.code)
+    return [...new Set(codes)]
 })
 
-function handleAddDocument() {
-  isOpen.value = true // กดแล้วเปิด Modal ขึ้นมา
-}
+// ฟังก์ชันกรองเอกสาร (กรองตามช่องค้นหา และ Tag รหัสวิชาที่เลือก)
+const filteredDocuments = computed(() => {
+    return documents.value.filter(doc => {
+        const matchesSearch = doc.title.toLowerCase().includes(searchKeyword.value.toLowerCase()) ||
+                            doc.code.toLowerCase().includes(searchKeyword.value.toLowerCase())
+        const matchesTag = selectedTagCode.value ? doc.code === selectedTagCode.value : true
+        return matchesSearch && matchesTag
+    })
+})
 
-// ฟังก์ชันเช็คไฟล์ (บังคับรับเฉพาะ .pdf)
-const handleFileChange = (event) => {
-  const selectedFile = event.target.files[0]
-  if (selectedFile) {
-    if (selectedFile.type === 'application/pdf') {
-      form.file = selectedFile
+// ฟังก์ชันคลิกที่ Tag เพื่อกรองวิชา
+function filterByTag(code) {
+    if (selectedTagCode.value === code) {
+        selectedTagCode.value = null // ถ้าคลิกซ้ำให้กลับไปเลือก ALL
     } else {
-      alert('กรุณาอัปโหลดเฉพาะไฟล์นามสกุล .pdf เท่านั้นครับ!')
-      event.target.value = ''
-      form.file = null
+        selectedTagCode.value = code
     }
-  }
 }
 
-// ฟังก์ชันตอนกดปุ่ม Done ใน Popup
-const handleDone = () => {
-  console.log('ข้อมูลเอกสารที่อัปโหลด:', {
-    courseCode: form.courseCode,
-    sheetName: form.sheetName,
-    fileName: form.file ? form.file.name : null
-  })
-
-  // TODO: เขียนโค้ดส่งข้อมูลฟอร์มและไฟล์ไปให้ Backend ตรงนี้
-  alert('อัปโหลดเอกสารสำเร็จ!')
-  closeModal()
+// ฟังก์ชันเลือกดูทุกวิชา (ALL)
+function selectAllTags() {
+    selectedTagCode.value = null
 }
 
-// ฟังก์ชันปิดและล้างค่าในฟอร์ม
-const closeModal = () => {
-  isOpen.value = false
-  form.courseCode = ''
-  form.sheetName = ''
-  form.file = null
+// ฟังก์ชันเปิด-ปิด Ask AI ด้านขวา
+function toggleAskAI() {
+    isAiOpen.value = !isAiOpen.value
+}
+
+// ฟังก์ชันส่งข้อความแชทหา AI
+function sendMessage() {
+    if (!userMessage.value.trim()) return
+    console.log('User sent to AI:', userMessage.value)
+    userMessage.value = ''
 }
 </script>
 
 <template>
-    <div class="main-view">
-        <div class="toolbar">
-            <button class="add-btn" @click="handleAddDocument">
-                <span class="plus">+</span> เพิ่มเอกสารใหม่
-            </button>
+    <div class="content-container">
+        <!-- ฝั่งซ้าย: คลังสรุป -->
+        <section :class="['left-section', { 'full-width': !isAiOpen }]">
+            <h2 class="section-title">คลังสรุป</h2>
 
-            <div class="search-box">
-                <input
-                v-model="searchQuery"
-                type="text"
-                placeholder="ค้นหาเอกสาร"
+            <div class="search-box-container">
+                <input 
+                type="text" 
+                v-model="searchKeyword" 
+                placeholder="ค้นหาวิชาหรือชื่อสรุป" 
+                class="search-input" 
                 />
-                <span class="search-icon">🔍</span>
-            </div>
-            </div>
-
-            <div class="documents-panel">
-            <div class="bg-pattern" aria-hidden="true">
-                <p>Smart AI Exam Brief Smart AI Exam <br>
-                Brief Smart AI Exam Brief <br>
-                Exam Brief Smart AI Exam Brief Smart AI Exam Brief <br>
-                Smart AI Exam Brief Smart AI Exam Brief <br>
-                Brief Smart AI Exam Brief Smart AI Exam Brief <br>
-                Smart AI Exam Brief Smart AI Exam Brief Smart <br>
-                AI Exam Brief AI Smart AI Exam Brief Smart <br>
-                Smart AI Exam Brief
-            </p>
+                <button class="search-btn">ค้นหา</button>
             </div>
 
-            <div class="documents-grid">
-                <div
-                v-for="doc in documents"
-                :key="doc.id"
-                class="doc-card"
+            <!-- ปุ่ม Tag รหัสวิชาทั้งหมด (มีปุ่ม ALL ด้านหน้า) -->
+            <div class="filter-tags">
+                <span 
+                class="tag"
+                :class="{ active: selectedTagCode === null }"
+                @click="selectAllTags"
                 >
-                <div class="doc-thumbnail"></div>
-                <p class="doc-title">{{ doc.title }}</p>
-                <p class="doc-author">By {{ doc.author }}</p>
+                ALL
+                </span>
+                <span 
+                v-for="code in availableTags" 
+                :key="code" 
+                class="tag"
+                :class="{ active: selectedTagCode === code }"
+                @click="filterByTag(code)"
+                >
+                {{ code }}
+                </span>
+            </div>
+
+            <!-- รายการเอกสารที่ผ่านการกรองแล้ว -->
+            <div class="document-list">
+                <div v-if="filteredDocuments.length === 0" class="no-result">
+                    ไม่พบเอกสารที่ค้นหา
+                </div>
+                <div v-for="doc in filteredDocuments" :key="doc.id" class="doc-card">
+                <div class="doc-left">
+                    <input type="checkbox" v-model="doc.checked" class="doc-checkbox" />
+                    <div class="doc-info">
+                    <span class="doc-name">{{ doc.title }}</span>
+                    <span class="doc-sub">{{ doc.pages }} Pages | Upload by : {{ doc.uploader }}</span>
+                    </div>
+                </div>
+                <div class="doc-right">
+                    <span class="doc-code">{{ doc.code }}</span>
+                    <button class="open-btn">open</button>
+                </div>
                 </div>
             </div>
-            <div class="page-count">page 1</div>
-            </div>
-        </div>
 
-        <!-- POPUP อัปโหลดไฟล์ PDF -->
-        <div v-if="isOpen" class="modal-overlay">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>อัปโหลดชีทเรียน</h2>
-                    <button class="close-btn" @click="closeModal">&times;</button>
+            <div class="bottom-action">
+                <button class="ask-ai-small-btn" @click="toggleAskAI">
+                {{ isAiOpen ? 'Close AI' : 'ASK AI' }}
+                </button>
+            </div>
+        </section>
+
+        <!-- ฝั่งขวา: หน้า AI ที่จะเลื่อน/แสดงขึ้นมาเมื่อกดปุ่ม Ask AI -->
+        <section v-if="isAiOpen" class="right-section ai-panel">
+            <div class="ask-ai-box">
+                <div class="ai-header-row">
+                <span class="ask-ai-header-label">Ask AI Assistant</span>
+                <button class="close-ai-btn" @click="toggleAskAI">✕</button>
                 </div>
-
-                <form @submit.prevent="handleDone" class="modal-form">
-                    <!-- ช่องใส่รหัสวิชา -->
-                    <div class="form-group">
-                        <label>รหัสวิชา</label>
-                        <input 
-                            type="text" 
-                            v-model="form.courseCode" 
-                            placeholder="เช่น 01418111" 
-                            required
-                        />
-                    </div>
-
-                    <!-- ช่องใส่ชื่อชีทเรียน -->
-                    <div class="form-group">
-                        <label>ชื่อชีทเรียน</label>
-                        <input 
-                            type="text" 
-                            v-model="form.sheetName" 
-                            placeholder="เช่น สรุป Lecture บทที่ 1" 
-                            required
-                        />
-                    </div>
-
-                    <!-- ช่องเลือกไฟล์ PDF -->
-                    <div class="form-group">
-                        <label>ไฟล์ PDF (.pdf เท่านั้น)</label>
-                        <input 
-                            type="file" 
-                            accept="application/pdf" 
-                            @change="handleFileChange" 
-                            required
-                        />
-                    </div>
-
-                    <!-- ปุ่มกด Action (ยกเลิก / Done) -->
-                    <div class="modal-actions">
-                        <button type="button" class="cancel-btn" @click="closeModal">ยกเลิก</button>
-                        <button type="submit" class="done-btn">Done</button>
-                    </div>
-                </form>
+                
+                <div class="chat-inner-container">
+                <div class="chat-box-area">
+                    <img :src="saebIcon" alt="SAEB" class="ai-logo" />
+                </div>
+                <div class="chat-input-wrapper">
+                    <input type="text" v-model="userMessage" placeholder="อธิบายเนื้อหาให้หน่อย . . ." class="chat-text-input" />
+                    <button class="send-btn" @click="sendMessage">send</button>
+                </div>
+                </div>
             </div>
-        </div>
+        </section>
+    </div>
 </template>
 
 <style scoped>
-.main-view {
-    min-height: 80vh;
-    padding: 2rem;
-}
-
-.toolbar {
+.content-container {
     display: flex;
-    gap: 1vw;
-    margin-bottom: 1.5vh;
+    padding: 2rem 3rem;
+    gap: 2rem;
+    min-height: 85vh;
+    background-color: #fcf6e9;
+    transition: all 0.3s ease;
 }
 
-.add-btn {
-    font-family: 'Le mumure' , 'San-serif';
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    background: #7a2222;
-    color: #efe8dc;
-    border: none;
-    border-radius: 8px;
-    padding: 0.7rem 1.2rem;
-    font-size: 0.95rem;
-    font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
-}
-
-.add-btn:hover {
-    background: #8f2a2a;
-}
-
-.plus {
-    font-size: 1.1rem;
-}
-
-.search-box {
-    flex: 1;
-    position: relative;
-    display: flex;
-    align-items: center;
-    background: #a89484;
-    border-radius: 8px;
-    padding: 0 1rem;
-}
-
-.search-box input {
-    flex: 1;
-    background: transparent;
-    border: none;
-    outline: none;
-    padding: 0.7rem 0;
-    color: #3a2f26;
-    font-size: 0.95rem;
-}
-
-.search-box input::placeholder {
-    color: #f0e9de;
-}
-
-.search-icon {
-    opacity: 0.8;
-}
-
-.documents-panel {
-    position: relative;
-    background: #f4efe4;
-    border: 1px solid #d8cdb8;
-    border-radius: 12px;
-    padding: 2rem;
-    overflow: hidden;
-}
-
-.bg-pattern {
-    position: absolute;
-    inset: 0;
+.left-section {
+    flex: 1.2;
+    background: #fdfbf7;
+    border: 2px solid #000;
+    padding: 1.5rem;
+    box-shadow: 4px 4px 0px #000;
     display: flex;
     flex-direction: column;
-    justify-content: space-evenly;
-    opacity: 0.15;
-    z-index: 0;
-    pointer-events: none;
+    transition: flex 0.3s ease;
 }
 
-.bg-pattern p {
-    font-family: 'Lacquer', sans-serif;
-    font-size: 50px;
+/* ถ้าปิด AI ฝั่งซ้ายจะขยายเต็มจอสวยๆ */
+.left-section.full-width {
+    flex: 1;
+}
+
+.section-title {
+    font-size: 1.8rem;
+    font-style: italic;
+    font-weight: bold;
+    margin-bottom: 1rem;
+}
+
+.search-box-container {
+    display: flex;
+    background: #000;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.search-input {
+    flex: 1;
+    padding: 0.8rem 1rem;
+    border: none;
+    outline: none;
+    font-size: 1rem;
+    background: #fff;
+    color: #000;
+}
+
+.search-btn {
+    background-color: #e63946;
+    color: #fff;
+    border: none;
+    padding: 0 1.5rem;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.filter-tags {
+    display: flex;
+    gap: 0.8rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.tag {
+    border: 2px solid #2C9440;
+    color: #2C9440;
+    padding: 0.3rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    background: #e9f5f3;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tag.active, .tag:hover {
+    background-color: #2C9440;
+    color: #fff;
+}
+
+.document-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    max-height: 420px;
+    padding-right: 0.5rem;
+}
+
+.no-result {
     text-align: center;
-    color: #905E5E;
-    margin: 0;
-    transform: rotate(-1deg);
-}
-
-.documents-grid {
-    position: relative;
-    z-index: 1;
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 1.5vh;
+    color: #777;
+    padding: 2rem;
+    font-style: italic;
 }
 
 .doc-card {
     display: flex;
-    flex-direction: column;
-}
-
-.doc-thumbnail {
-    aspect-ratio: 3 / 4;
-    background: #c9c4bb;
-    border: 2px solid #fff;
-    border-radius: 6px;
-    margin-bottom: 0.6rem;
-}
-
-.doc-title {
-    font-size: 1rem;
-    font-weight: bolder;
-    margin: 0;
-}
-
-.doc-author {
-    font-size: 0.8rem;
-    color: #8a7a6a;
-    margin: 0.2rem 0 0;
-}
-
-/* Styling for Popup*/
-.modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(58, 47, 38, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-}
-
-.modal-content {
-    background: #f4efe4;
-    border: 1px solid #d8cdb8;
-    border-radius: 12px;
-    padding: 2rem;
-    width: 100%;
-    max-width: 420px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-}
-
-.modal-header {
-    display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.2rem;
+    background: #fefae0;
+    border: 2px solid #000;
+    padding: 0.8rem 1rem;
+    border-radius: 6px;
 }
 
-.modal-header h2 {
-    font-size: 1.25rem;
-    font-weight: bold;
-    color: #3a2f26;
-    margin: 0;
-}
-
-.close-btn {
-    background: transparent;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-    color: #8a7a6a;
-}
-
-.modal-form {
+.doc-left {
     display: flex;
-    flex-direction: column;
+    align-items: center;
     gap: 1rem;
 }
 
-.form-group {
+.doc-checkbox {
+    width: 20px;
+    height: 20px;
+    accent-color: #e63946;
+    cursor: pointer;
+}
+
+.doc-info {
     display: flex;
     flex-direction: column;
-    gap: 0.3rem;
 }
 
-.form-group label {
+.doc-name {
+    font-weight: bold;
+    font-style: italic;
+    font-size: 1.1rem;
+}
+
+.doc-sub {
+    font-size: 0.85rem;
+    color: #555;
+}
+
+.doc-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.doc-code {
+    border: 1px solid #000;
+    padding: 0.2rem 0.6rem;
     font-size: 0.9rem;
-    font-weight: 600;
-    color: #3a2f26;
-}
-
-.form-group input[type="text"],
-.form-group input[type="file"] {
-    padding: 0.6rem 0.8rem;
-    border: 1px solid #d8cdb8;
-    border-radius: 8px;
     background: #fff;
-    font-size: 0.9rem;
-    outline: none;
-    color: #3a2f26;
+    border-radius: 4px;
 }
 
-.form-group input[type="text"]:focus {
-    border-color: #7a2222;
+.open-btn {
+    background-color: #2C9440;
+    color: #fff;
+    border: 2px solid #000;
+    padding: 0.3rem 1rem;
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: pointer;
 }
 
-.modal-actions {
+.bottom-action {
     display: flex;
     justify-content: flex-end;
-    gap: 0.8rem;
     margin-top: 1rem;
 }
 
-.cancel-btn {
-    background: #d8cdb8;
-    color: #3a2f26;
+.ask-ai-small-btn {
+    background-color: #e9c46a;
+    border: 2px solid #000;
+    padding: 0.4rem 1.5rem;
+    font-weight: bold;
+    font-style: italic;
+    box-shadow: 2px 2px 0px #000;
+    cursor: pointer;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.ask-ai-small-btn:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 4px 4px 0px #000;
+}
+
+/* Right Section (Ask AI Panel) */
+.right-section.ai-panel {
+    flex: 1;
+    background: #fff;
+    border: 2px solid #000;
+    box-shadow: 4px 4px 0px #000;
+    display: flex;
+    flex-direction: column;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.ask-ai-box {
+    padding: 1.5rem;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.ai-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.ask-ai-header-label {
+    color: #e63946;
+    font-style: italic;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.close-ai-btn {
+    background: none;
     border: none;
-    border-radius: 8px;
-    padding: 0.6rem 1.2rem;
-    font-weight: 600;
+    font-size: 1.2rem;
+    font-weight: bold;
     cursor: pointer;
 }
 
-.cancel-btn:hover {
-    background: #c5b8a2;
+.chat-inner-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    margin-top: 0.5rem;
+    gap: 0.8rem;
 }
 
-.done-btn {
-    background: #7a2222;
-    color: #efe8dc;
-    border: none;
+.chat-box-area {
+    flex: 1;
+    border: 2px solid #e63946;
     border-radius: 8px;
-    padding: 0.6rem 1.2rem;
-    font-weight: 600;
+    background: #fff;
+    min-height: 200px;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ai-logo {
+    width: 100px;
+    height: auto;
+    opacity: 0.4;
+}
+
+.chat-input-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.chat-text-input {
+    border: 1px solid #000;
+    padding: 0.8rem;
+    border-radius: 4px;
+    outline: none;
+    background: #fefae0;
+    font-size: 0.95rem;
+}
+
+.send-btn {
+    align-self: flex-end;
+    background-color: #2C9440;
+    color: #fff;
+    border: 2px solid #000;
+    padding: 0.3rem 1.5rem;
+    font-weight: bold;
+    border-radius: 4px;
     cursor: pointer;
-}
-
-.done-btn:hover {
-    background: #8f2a2a;
-}
-
-@media (max-width: 1024px) {
-    .documents-grid {
-        grid-template-columns: repeat(3, 1fr);
-    }
-}
-
-@media (max-width: 640px) {
-    .toolbar {
-        flex-direction: column;
-    }
-    .documents-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
+    box-shadow: 2px 2px 0px #000;
 }
 </style>

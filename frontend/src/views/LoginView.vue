@@ -26,6 +26,7 @@ async function handleLogin() {
 
   if (result.success) {
     // เข้าสู่ระบบสำเร็จ ย้ายไปหน้า Dashboard
+    router.push('/dashboard') // เปลี่ยน path เป็นหน้าหลักตามต้องการ
     router.push('/main') // เปลี่ยน path เป็นหน้าหลักตามต้องการ
   } else {
     // แสดงข้อความ Error ที่ Backend / DynamoDB ส่งกลับมา
@@ -76,12 +77,13 @@ async function handleLogin() {
             <p v-if="errorMessage" class="error-text">{{ errorMessage }}</p>
 
             <button type="submit" class="login-btn" :disabled="isLoading">
-                 {{ isLoading ? 'Signing in...' : 'Login' }}
+                {{ isLoading ? 'Signing in...' : 'Login' }}
             </button>
             <!-- <a href="#" class="forgot" @click.prevent>Forgot your password?</a> -->
         </form>
     </div>
 </template>
+
 
 <style scoped>
 .login-page{
@@ -239,12 +241,12 @@ async function handleLogin() {
     .subtitle {
         font-size: 14px;
     }
- 
+
     .field,
     .login-btn {
         font-size: 22px;
     }
- 
+
     .field {
         height: 64px;
     }

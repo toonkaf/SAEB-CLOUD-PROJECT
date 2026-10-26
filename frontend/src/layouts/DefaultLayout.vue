@@ -7,7 +7,6 @@ const route = useRoute();
 
 const navItems = [
     { label: 'Home', to: '/main' },
-    { label: 'AI', to: '/ai' },
     { label: '+ Upload', to: '/uploads' },
 ]
 // มาแก้ path เอานะ
