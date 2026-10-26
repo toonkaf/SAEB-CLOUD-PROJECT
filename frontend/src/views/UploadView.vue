@@ -1,324 +1,306 @@
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import saebIcon from '@/assets/images/SAEB_ICON.png'
-import { useDocumentsStore, isPdf, MAX_SIZE } from '@/stores/documents'
+import saebIcon from '@/assets/images/SAEB_ICON.png' 
+import { useDocumentsStore } from '@/stores/documents'
 
-const store = useDocumentsStore()
-const router = useRouter()
-
-const title = ref('')
-const subjectCode = ref('')
-const fileInput = ref(null)
-const selectedFile = ref(null)
-const fileError = ref('')
-const uploadError = ref('')
+const docsStore = useDocumentsStore()
+const selectedFiles = ref([])
+const isDragging = ref(false)
 const isUploading = ref(false)
 
-function triggerFileInput() {
-    fileInput.value.click()
+function onDragOver(event) {
+  event.preventDefault()
+  isDragging.value = true
 }
 
-function handleFileChange(event) {
-    const file = event.target.files[0]
-    if (!file) return
+function onDragLeave(event) {
+  event.preventDefault()
+  isDragging.value = false
+}
 
-    // accept=".pdf" แค่กรองในหน้าต่างเลือกไฟล์ ผู้ใช้ยังเลือก All files ได้ จึงต้องเช็กซ้ำ
-    if (!isPdf(file)) {
-        fileError.value = 'อัพโหลดได้เฉพาะไฟล์ .pdf เท่านั้น'
-        selectedFile.value = null
-        event.target.value = ''
-        return
-    }
-    if (file.size > MAX_SIZE) {
-        fileError.value = 'ขนาดไฟล์ต้องไม่เกิน 20 MB'
-        selectedFile.value = null
-        event.target.value = ''
-        return
-    }
+function onDrop(event) {
+  event.preventDefault()
+  isDragging.value = false
+  const files = Array.from(event.dataTransfer.files)
+  addFiles(files)
+}
 
-    fileError.value = ''
-    uploadError.value = ''
-    selectedFile.value = file
-    if (!title.value) {
-        title.value = file.name.replace(/\.[^/.]+$/, "")
-    }
+function onFileSelect(event) {
+  const files = Array.from(event.target.files)
+  addFiles(files)
+}
+
+function addFiles(files) {
+  const pdfFiles = files.filter(file => file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'))
+  
+  if (pdfFiles.length !== files.length) {
+    alert('ระบบรองรับเฉพาะไฟล์ .pdf เท่านั้นครับ')
+  }
+  
+  // แปลงให้แต่ละไฟล์มีช่องเก็บ subjectCode ของตัวเอง
+  const newFiles = pdfFiles.map(file => ({
+    file: file,
+    subjectCode: '', 
+    title: file.name.replace('.pdf', '')
+  }))
+  
+  selectedFiles.value.push(...newFiles)
+}
+
+function removeFile(index) {
+  selectedFiles.value.splice(index, 1)
 }
 
 async function handleUpload() {
-    if (!selectedFile.value) {
-        fileError.value = 'กรุณาเลือกไฟล์ PDF'
-        return
-    }
+  if (selectedFiles.value.length === 0) return alert('กรุณาเลือกไฟล์อย่างน้อย 1 ไฟล์ครับ')
 
-    isUploading.value = true
-    uploadError.value = ''
+  // เช็กว่ากรอกรหัสวิชาครบทุกไฟล์หรือยัง
+  const hasEmptySubject = selectedFiles.value.some(item => !item.subjectCode.trim())
+  if (hasEmptySubject) {
+    return alert('กรุณากรอก Subject Code ให้ครบทุกไฟล์ก่อนอัปโหลดครับ')
+  }
 
-    const result = await store.uploadDocument({
-        file: selectedFile.value,
-        title: title.value,
-        subjectCode: subjectCode.value,
+  isUploading.value = true
+  let successCount = 0
+
+  for (const item of selectedFiles.value) {
+    const result = await docsStore.uploadDocument({
+      file: item.file,
+      title: item.title, 
+      subjectCode: item.subjectCode
     })
-
-    isUploading.value = false
-
+    
     if (result.success) {
-        router.push('/documents') // ไปดูรายการไฟล์ที่อัพโหลด
+      successCount++
     } else {
-        uploadError.value = result.message
+      alert(`อัปโหลดไฟล์ ${item.file.name} ไม่สำเร็จ: ${result.message}`)
     }
+  }
+
+  isUploading.value = false
+  if (successCount > 0) {
+    alert(`อัปโหลดสำเร็จ ${successCount} ไฟล์`)
+    selectedFiles.value = [] // เคลียร์คิวเมื่อเสร็จ
+  }
 }
-
-function handleCancel() {
-    title.value = ''
-    subjectCode.value = ''
-    selectedFile.value = null
-    fileError.value = ''
-    uploadError.value = ''
-    router.back()
-}
-
-function handleFileDrop(event) {
-    const file = event.dataTransfer?.files[0]
-    if (!file) return
-
-    // เรียกใช้ logic ตรวจสอบไฟล์เดียวกับ handleFileChange
-    processFile(file)
-}
-
 </script>
 
 <template>
-    <div class="upload-container">
-        <h2 class="upload-title">Upload</h2>
-        
-        <div class="upload-content-grid">
-            <!-- ฝั่งซ้าย: Dashed Dropzone -->
-            <div 
-                class="dropzone-box"
-                @dragover.prevent
-                @drop.prevent="handleFileDrop"
-            >
-            
-                <div class="dropzone-inner">
-                    <img :src="saebIcon" alt="SAEB" class="dropzone-logo" />
-                    <span class="dropzone-note" :class="{ 'is-error': fileError }">
-                        {{ fileError || (selectedFile ? `Selected: ${selectedFile.name}` : 'รองรับเฉพาะ .pdf') }}
-                    </span>
-                    
-                    <!-- ปุ่มเลือกไฟล์ -->
-                    <button type="button" class="choose-file-btn" @click="triggerFileInput">Choose File</button>
-                    
-                    <!-- Hidden Input สำหรับเปิดหน้าต่างเลือกไฟล์ในเครื่อง -->
-                    <input 
-                        type="file" 
-                        ref="fileInput" 
-                        @change="handleFileChange" 
-                        accept="application/pdf,.pdf" 
-                        style="display: none;" 
-                    />
-                </div>
+  <div class="upload-container">
+    <div class="upload-box">
+      <h1 class="page-title">Upload</h1>
+      
+      <div class="upload-content">
+        <!-- พื้นที่ลากวางไฟล์และรายการไฟล์ -->
+        <div 
+          class="drop-zone" 
+          :class="{ 'is-dragging': isDragging }"
+          @dragover="onDragOver"
+          @dragleave="onDragLeave"
+          @drop="onDrop"
+        >
+          <img :src="saebIcon" alt="SAEB Logo" class="saeb-logo" />
+          
+          <div class="file-list" v-if="selectedFiles.length > 0">
+            <p style="font-weight: bold; margin-bottom: 0.5rem; width: 100%; text-align: left;">Selected Files:</p>
+            <div v-for="(item, index) in selectedFiles" :key="index" class="file-item-row">
+              <div class="file-info">
+                <span class="file-name">{{ item.file.name }}</span>
+                <input type="text" v-model="item.subjectCode" placeholder="Subject Code" class="inline-input" />
+              </div>
+              <button class="remove-btn" @click="removeFile(index)">✕</button>
             </div>
+          </div>
+          <div v-else class="placeholder-text">
+            Drag & Drop PDF files here<br/>or
+          </div>
 
-            <!-- ฝั่งขวา: Form -->
-            <div class="form-section">
-                <div class="form-group">
-                    <label class="form-label">Title</label>
-                    <input type="text" v-model="title" placeholder="Enter the title" maxlength="200" class="form-input" />
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Subject Code</label>
-                    <input type="text" v-model="subjectCode" placeholder="Enter subject code" maxlength="20" class="form-input" />
-                </div>
-
-                <p v-if="uploadError" class="upload-error" role="alert">{{ uploadError }}</p>
-
-                <div class="form-actions">
-                    <button type="button" class="cancel-btn" :disabled="isUploading" @click="handleCancel">Cancel</button>
-                    <button type="button" class="submit-upload-btn" :disabled="isUploading" @click="handleUpload">
-                        {{ isUploading ? 'Uploading...' : 'Upload' }}
-                    </button>
-                </div>
-            </div>
+          <label class="choose-file-btn" style="margin-top: 1rem;">
+            Choose Files
+            <input type="file" accept=".pdf" multiple @change="onFileSelect" hidden />
+          </label>
         </div>
+
+        <!-- ปุ่มจัดการ (ย้ายมาอยู่ด้านขวาหรือด้านล่าง) -->
+        <div class="action-section">
+          <div class="action-buttons">
+            <button class="cancel-btn" @click="selectedFiles = []">Cancel</button>
+            <button class="upload-btn" @click="handleUpload" :disabled="isUploading">
+              {{ isUploading ? 'Uploading...' : 'Upload All' }}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
+  </div>
 </template>
 
 <style scoped>
+/* เพิ่ม box-sizing ให้ครอบคลุมทุกองค์ประกอบในหน้านี้ เพื่อแก้ปัญหาล้นกรอบ */
+* {
+  box-sizing: border-box;
+}
+
 .upload-container {
-    padding: 2.5rem 4rem;
-    display: flex;
-    flex-direction: column;
-    min-height: 85vh;
-    background-color: #fcf6e9;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 85vh;
+  background-color: #fcf6e9;
+  padding: 2rem; /* เพิ่ม padding เผื่อหน้าจอเล็ก */
 }
 
-.upload-title {
-    font-size: 2rem;
-    font-style: italic;
-    font-weight: bold;
-    margin-bottom: 1.5rem;
+.upload-box {
+  background: #fdfbf7;
+  border: 2px solid #000;
+  box-shadow: 4px 4px 0px #000;
+  padding: 2rem 3rem;
+  width: 100%;
+  max-width: 800px; /* เปลี่ยนจาก width ฟิกซ์ตายตัว เป็น max-width */
 }
 
-.upload-content-grid {
-    display: flex;
-    gap: 3rem;
-    flex: 1;
+.page-title {
+  font-size: 2rem;
+  font-style: italic;
+  font-weight: bold;
+  margin-bottom: 2rem;
 }
 
-.dropzone-box {
-    flex: 1.2;
-    border: 3px dashed #e63946;
-    background-color: #fdfbf7;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 3rem;
-    box-shadow: 4px 4px 0px #000;
+.upload-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 }
 
-.dropzone-inner {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1.2rem;
-    text-align: center;
+.drop-zone {
+  width: 100%;
+  border: 3px dashed #e63946;
+  border-radius: 8px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  transition: all 0.3s;
+  min-height: 300px;
 }
 
-.dropzone-logo {
-    width: 100px;
-    height: auto;
+.drop-zone.is-dragging {
+  background-color: #fefae0;
+  border-color: #2c9440;
 }
 
-.dropzone-note {
-    font-size: 0.9rem;
-    color: #444;
-    max-width: 250px;
-    word-break: break-all;
+.saeb-logo {
+  width: 120px;
+  margin-bottom: 1rem;
+}
+
+.file-list {
+  width: 100%;
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+  padding-right: 5px;
+}
+
+.file-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f1f1f1;
+  padding: 0.5rem 0.8rem;
+  margin-bottom: 0.5rem;
+  border-radius: 4px;
+}
+
+.file-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.file-name {
+  font-weight: bold;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inline-input {
+  padding: 0.4rem;
+  border: 1px solid #000;
+  border-radius: 4px;
+  width: 150px;
+}
+
+.remove-btn {
+  background: none;
+  border: none;
+  color: #e63946;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1.1rem;
+  margin-left: 1rem;
+}
+
+.placeholder-text {
+  text-align: center;
+  color: #666;
+  margin-bottom: 1rem;
 }
 
 .choose-file-btn {
-    background-color: #e9c46a;
-    border: 2px solid #000;
-    padding: 0.6rem 2rem;
-    font-weight: bold;
-    font-size: 1.1rem;
-    box-shadow: 2px 2px 0px #000;
-    cursor: pointer;
-    transition: transform 0.1s ease, box-shadow 0.1s ease;
-}
-
-.choose-file-btn:hover {
-    transform: translate(-2px, -2px);
-    box-shadow: 4px 4px 0px #000;
+  background-color: #e9c46a;
+  border: 2px solid #000;
+  padding: 0.6rem 2rem;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 2px 2px 0px #000;
 }
 
 .choose-file-btn:active {
-    transform: translate(1px, 1px);
-    box-shadow: 1px 1px 0px #000;
+  box-shadow: 0px 0px 0px #000;
+  transform: translate(2px, 2px);
 }
 
-.form-section {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    justify-content: center;
+.action-section {
+  display: flex;
+  justify-content: flex-end;
 }
 
-.form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
 }
 
-.form-label {
-    font-weight: bold;
-    font-style: italic;
-    font-size: 1.1rem;
-}
-
-.form-input {
-    border: 2px solid #000;
-    padding: 0.9rem 1rem;
-    border-radius: 4px;
-    background: #fff;
-    font-size: 1rem;
-    outline: none;
-}
-
-.form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 1rem;
-    margin-top: 1rem;
+.cancel-btn, .upload-btn {
+  flex: 1;
+  padding: 0.8rem;
+  font-weight: bold;
+  font-style: italic;
+  font-size: 1.1rem;
+  border: 2px solid #000;
+  box-shadow: 2px 2px 0px #000;
+  cursor: pointer;
 }
 
 .cancel-btn {
-    background-color: #fff;
-    border: 2px solid #000;
-    padding: 0.5rem 2rem;
-    font-weight: bold;
-    font-style: italic;
-    font-size: 1.1rem;
-    color: #e63946;
-    cursor: pointer;
-    box-shadow: 2px 2px 0px #000;
-    transition: transform 0.1s ease, box-shadow 0.1s ease;
+  background-color: #fff;
 }
 
-.cancel-btn:hover {
-    transform: translate(-2px, -2px);
-    box-shadow: 4px 4px 0px #000;
+.upload-btn {
+  background-color: #e63946;
+  color: #fff;
 }
 
-.cancel-btn:active {
-    transform: translate(1px, 1px);
-    box-shadow: 1px 1px 0px #000;
-}
-
-.submit-upload-btn {
-    background-color: #e63946;
-    border: 2px solid #000;
-    padding: 0.5rem 2.5rem;
-    font-weight: bold;
-    font-style: italic;
-    font-size: 1.1rem;
-    color: #fff;
-    cursor: pointer;
-    box-shadow: 2px 2px 0px #000;
-    transition: transform 0.1s ease, box-shadow 0.1s ease;
-}
-
-.submit-upload-btn:hover {
-    transform: translate(-2px, -2px);
-    box-shadow: 4px 4px 0px #000;
-}
-
-.submit-upload-btn:active {
-    transform: translate(1px, 1px);
-    box-shadow: 1px 1px 0px #000;
-}
-
-.dropzone-note.is-error {
-    color: #e63946;
-    font-weight: bold;
-}
-
-.upload-error {
-    margin: 0;
-    color: #e63946;
-    font-weight: bold;
-    text-align: right;
-}
-
-.cancel-btn:disabled,
-.submit-upload-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: 2px 2px 0px #000;
+.upload-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 </style>
