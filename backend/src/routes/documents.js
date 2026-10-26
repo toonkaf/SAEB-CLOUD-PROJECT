@@ -35,6 +35,11 @@ function toDto(item) {
   };
 }
 
+// DTO สำหรับหน้า Main ที่ทุกคนเห็นเอกสารของกันและกัน
+function toPublicDto(item) {
+  return { ...toDto(item), author: item.student_id };
+}
+
 // 1. ขอ presigned URL เพื่ออัพโหลด PDF ขึ้น S3 โดยตรง
 router.post('/upload-url', async (req, res) => {
   const { fileName, size } = req.body;
@@ -113,15 +118,17 @@ router.post('/', async (req, res) => {
 // 3. รายการเอกสารของผู้ใช้ที่ล็อกอิน (ใหม่สุดก่อน)
 // ตารางใช้ document_id เป็น key จึง Query ด้วย student_id ไม่ได้ ต้อง Scan แล้วกรอง
 // TODO: ถ้าข้อมูลเยอะ ให้สร้าง GSI (student_id + uploaded_at) แล้วเปลี่ยนเป็น Query
-async function listOwnDocuments(student_id) {
+async function scanDocuments(student_id) {
   const items = [];
   let lastKey;
   do {
     const result = await docClient.send(
       new ScanCommand({
         TableName: DOCUMENTS_TABLE,
-        FilterExpression: 'student_id = :sid',
-        ExpressionAttributeValues: { ':sid': student_id },
+        ...(student_id && {
+          FilterExpression: 'student_id = :sid',
+          ExpressionAttributeValues: { ':sid': student_id },
+        }),
         ExclusiveStartKey: lastKey,
       })
     );
@@ -131,12 +138,23 @@ async function listOwnDocuments(student_id) {
   return items;
 }
 
+const newestFirst = (a, b) => b.uploaded_at.localeCompare(a.uploaded_at);
+
+// เอกสารของทุกคน สำหรับหน้า Main (ต้องล็อกอิน)
+router.get('/all', async (req, res) => {
+  try {
+    const items = await scanDocuments();
+    return res.status(200).json({ documents: items.sort(newestFirst).map(toPublicDto) });
+  } catch (error) {
+    console.error('List All Documents Error:', error);
+    return res.status(500).json({ message: 'ไม่สามารถโหลดรายการเอกสารได้' });
+  }
+});
+
 router.get('/', async (req, res) => {
   try {
-    const items = await listOwnDocuments(req.user.student_id);
-    const documents = items
-      .sort((a, b) => b.uploaded_at.localeCompare(a.uploaded_at))
-      .map(toDto);
+    const items = await scanDocuments(req.user.student_id);
+    const documents = items.sort(newestFirst).map(toDto);
 
     return res.status(200).json({ documents });
   } catch (error) {
@@ -145,19 +163,24 @@ router.get('/', async (req, res) => {
   }
 });
 
-// ดึง item ตาม document_id และต้องเป็นของผู้ใช้คนนี้เท่านั้น (ใช้ซ้ำใน download / delete)
-async function findOwnDocument(student_id, document_id) {
+// ดึง item ตาม document_id
+async function findDocument(document_id) {
   const result = await docClient.send(
     new GetCommand({ TableName: DOCUMENTS_TABLE, Key: { document_id } })
   );
-  const item = result.Item;
+  return result.Item;
+}
+
+// ดึงเฉพาะของผู้ใช้คนนี้ (ใช้ตอนลบ)
+async function findOwnDocument(student_id, document_id) {
+  const item = await findDocument(document_id);
   return item && item.student_id === student_id ? item : undefined;
 }
 
 // 4. ลิงก์ชั่วคราวสำหรับเปิดดู PDF
 router.get('/:docId/download-url', async (req, res) => {
   try {
-    const item = await findOwnDocument(req.user.student_id, req.params.docId);
+    const item = await findDocument(req.params.docId);
     if (!item) return res.status(404).json({ message: 'ไม่พบเอกสาร' });
 
     const url = await getSignedUrl(

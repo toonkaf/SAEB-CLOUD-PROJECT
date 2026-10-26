@@ -11,7 +11,8 @@ export function isPdf(file) {
 }
 
 export const useDocumentsStore = defineStore('documents', () => {
-  const documents = ref([])
+  const documents = ref([]) // ของฉัน
+  const allDocuments = ref([]) // ของทุกคน (หน้า Main)
   const isLoading = ref(false)
 
   function authHeaders() {
@@ -33,6 +34,19 @@ export const useDocumentsStore = defineStore('documents', () => {
     try {
       const { data } = await apiClient.get('/documents', { headers: authHeaders() })
       documents.value = data.documents.map((d) => ({ ...d, uploadedAt: new Date(d.uploadedAt) }))
+      return { success: true }
+    } catch (error) {
+      return { success: false, message: errorMessageOf(error, 'โหลดรายการเอกสารไม่สำเร็จ') }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function fetchAllDocuments() {
+    isLoading.value = true
+    try {
+      const { data } = await apiClient.get('/documents/all', { headers: authHeaders() })
+      allDocuments.value = data.documents.map((d) => ({ ...d, uploadedAt: new Date(d.uploadedAt) }))
       return { success: true }
     } catch (error) {
       return { success: false, message: errorMessageOf(error, 'โหลดรายการเอกสารไม่สำเร็จ') }
@@ -107,5 +121,5 @@ export const useDocumentsStore = defineStore('documents', () => {
     }
   }
 
-  return { documents, isLoading, fetchDocuments, uploadDocument, removeDocument, openDocument }
+  return { documents, allDocuments, isLoading, fetchDocuments, fetchAllDocuments, uploadDocument, removeDocument, openDocument }
 })
