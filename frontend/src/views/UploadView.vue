@@ -77,6 +77,15 @@ function handleCancel() {
     uploadError.value = ''
     router.back()
 }
+
+function handleFileDrop(event) {
+    const file = event.dataTransfer?.files[0]
+    if (!file) return
+
+    // เรียกใช้ logic ตรวจสอบไฟล์เดียวกับ handleFileChange
+    processFile(file)
+}
+
 </script>
 
 <template>
@@ -85,7 +94,12 @@ function handleCancel() {
         
         <div class="upload-content-grid">
             <!-- ฝั่งซ้าย: Dashed Dropzone -->
-            <div class="dropzone-box">
+            <div 
+                class="dropzone-box"
+                @dragover.prevent
+                @drop.prevent="handleFileDrop"
+            >
+            
                 <div class="dropzone-inner">
                     <img :src="saebIcon" alt="SAEB" class="dropzone-logo" />
                     <span class="dropzone-note" :class="{ 'is-error': fileError }">

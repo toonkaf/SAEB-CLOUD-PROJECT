@@ -4,22 +4,21 @@ import apiClient from '@/services/api'
 import router from '@/router'
 import { useAuthStore } from '@/stores/auth'
 
-export const MAX_SIZE = 20 * 1024 * 1024 // 20 MB (ต้องตรงกับ backend)
+export const MAX_SIZE = 20 * 1024 * 1024 // 20 MB
 
 export function isPdf(file) {
   return file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
 }
 
 export const useDocumentsStore = defineStore('documents', () => {
-  const documents = ref([]) // ของฉัน
-  const allDocuments = ref([]) // ของทุกคน (หน้า Main)
+  const documents = ref([]) // เอกสารเฉพาะของผู้ใช้คนนี้
+  const allDocuments = ref([]) // เอกสารของทุกคน
   const isLoading = ref(false)
 
   function authHeaders() {
     return { Authorization: `Bearer ${useAuthStore().token}` }
   }
 
-  // แปลง error จาก API เป็นข้อความ และเด้งไปหน้า login ถ้า token หมดอายุ
   function errorMessageOf(error, fallback) {
     if (error.response?.status === 401) {
       useAuthStore().logout()
@@ -29,11 +28,32 @@ export const useDocumentsStore = defineStore('documents', () => {
     return error.response?.data?.message || fallback
   }
 
+  // ดึงเฉพาะเอกสารของผู้ใช้ปัจจุบัน
   async function fetchDocuments() {
     isLoading.value = true
     try {
-      const { data } = await apiClient.get('/documents', { headers: authHeaders() })
-      documents.value = data.documents.map((d) => ({ ...d, uploadedAt: new Date(d.uploadedAt) }))
+      const authStore = useAuthStore()
+      const currentUserId = authStore.user?.student_id || 'anonymous'
+
+      const { data } = await apiClient.get('/documents/search', {
+        headers: authHeaders(),
+        params: { uploader_id: currentUserId } // ส่ง uploader_id ไปกรองที่ Backend
+      })
+      
+      documents.value = data.documents.map((d) => {
+        const rawDate = d.created_at || d.uploadedAt || d.uploaded_at
+        const parsedDate = rawDate ? new Date(rawDate) : new Date()
+        
+        return { 
+          ...d, 
+          id: d.document_id || d.id,
+          size: d.file_size || d.size || 0,
+          subjectCode: d.subject_code || d.subjectCode || '',
+          fileName: d.file_name || d.fileName || '',
+          uploadedAt: isNaN(parsedDate.getTime()) ? new Date() : parsedDate 
+        }
+      })
+      
       return { success: true }
     } catch (error) {
       return { success: false, message: errorMessageOf(error, 'โหลดรายการเอกสารไม่สำเร็จ') }
@@ -42,11 +62,26 @@ export const useDocumentsStore = defineStore('documents', () => {
     }
   }
 
+  // ดึงเอกสารทั้งหมดของทุกคน (สำหรับหน้า Main/Public)
   async function fetchAllDocuments() {
     isLoading.value = true
     try {
-      const { data } = await apiClient.get('/documents/all', { headers: authHeaders() })
-      allDocuments.value = data.documents.map((d) => ({ ...d, uploadedAt: new Date(d.uploadedAt) }))
+      const { data } = await apiClient.get('/documents/search', { headers: authHeaders() })
+      
+      allDocuments.value = data.documents.map((d) => {
+        const rawDate = d.created_at || d.uploadedAt || d.uploaded_at
+        const parsedDate = rawDate ? new Date(rawDate) : new Date()
+        
+        return { 
+          ...d, 
+          id: d.document_id || d.id,
+          size: d.file_size || d.size || 0,
+          subjectCode: d.subject_code || d.subjectCode || '',
+          fileName: d.file_name || d.fileName || '',
+          uploadedAt: isNaN(parsedDate.getTime()) ? new Date() : parsedDate 
+        }
+      })
+      
       return { success: true }
     } catch (error) {
       return { success: false, message: errorMessageOf(error, 'โหลดรายการเอกสารไม่สำเร็จ') }
@@ -55,38 +90,49 @@ export const useDocumentsStore = defineStore('documents', () => {
     }
   }
 
-  // อัพโหลด 3 ขั้น: ขอลิงก์ -> ส่งไฟล์ขึ้น S3 -> บันทึก metadata
   async function uploadDocument({ file, title, subjectCode }) {
     if (!isPdf(file)) return { success: false, message: 'อัพโหลดได้เฉพาะไฟล์ .pdf เท่านั้น' }
     if (file.size > MAX_SIZE) return { success: false, message: 'ขนาดไฟล์ต้องไม่เกิน 20 MB' }
 
     try {
       const { data } = await apiClient.post(
-        '/documents/upload-url',
+        '/upload-url',
         { fileName: file.name, size: file.size },
         { headers: authHeaders() }
       )
 
-      // ใช้ fetch ไม่ใช้ apiClient เพราะ S3 ไม่ต้องการ header Authorization ของเรา
+      const uploadUrl = data.uploadUrl || data.upload_url
+      const fileKey = data.s3Key || data.file_key || data.key
+
       let putResponse
       try {
-        putResponse = await fetch(data.uploadUrl, {
+        putResponse = await fetch(uploadUrl, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/pdf' },
           body: file,
         })
       } catch {
-        return { success: false, message: 'ส่งไฟล์ขึ้น S3 ไม่สำเร็จ (ตรวจสอบการตั้งค่า CORS ของ bucket)' }
+        return { success: false, message: 'ส่งไฟล์ขึ้น S3 ไม่สำเร็จ (ตรวจสอบการตั้งค่า CORS ของ S3 Bucket)' }
       }
+
       if (!putResponse.ok) {
         return { success: false, message: 'ส่งไฟล์ขึ้น S3 ไม่สำเร็จ' }
       }
 
+      const authStore = useAuthStore()
       await apiClient.post(
         '/documents',
-        { title, subjectCode, fileName: file.name, s3Key: data.s3Key },
+        {
+          title,
+          subject_code: subjectCode,
+          file_key: fileKey,
+          file_name: file.name,
+          file_size: file.size,
+          uploader_id: authStore.user?.student_id || 'anonymous'
+        },
         { headers: authHeaders() }
       )
+
       return { success: true }
     } catch (error) {
       return { success: false, message: errorMessageOf(error, 'อัพโหลดเอกสารไม่สำเร็จ') }
@@ -104,7 +150,6 @@ export const useDocumentsStore = defineStore('documents', () => {
   }
 
   async function openDocument(id) {
-    // เปิดแท็บก่อน await เพื่อไม่ให้เบราว์เซอร์บล็อก popup
     const tab = window.open('', '_blank')
     try {
       const { data } = await apiClient.get(`/documents/${id}/download-url`, { headers: authHeaders() })
