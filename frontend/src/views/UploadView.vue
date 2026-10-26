@@ -1,11 +1,19 @@
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import saebIcon from '@/assets/images/SAEB_ICON.png'
+import { useDocumentsStore, isPdf, MAX_SIZE } from '@/stores/documents'
+
+const store = useDocumentsStore()
+const router = useRouter()
 
 const title = ref('')
 const subjectCode = ref('')
 const fileInput = ref(null)
 const selectedFile = ref(null)
+const fileError = ref('')
+const uploadError = ref('')
+const isUploading = ref(false)
 
 function triggerFileInput() {
     fileInput.value.click()
@@ -13,20 +21,61 @@ function triggerFileInput() {
 
 function handleFileChange(event) {
     const file = event.target.files[0]
-    if (file) {
-        selectedFile.value = file
-        if (!title.value) {
-            title.value = file.name.replace(/\.[^/.]+$/, "")
-        }
+    if (!file) return
+
+    // accept=".pdf" แค่กรองในหน้าต่างเลือกไฟล์ ผู้ใช้ยังเลือก All files ได้ จึงต้องเช็กซ้ำ
+    if (!isPdf(file)) {
+        fileError.value = 'อัพโหลดได้เฉพาะไฟล์ .pdf เท่านั้น'
+        selectedFile.value = null
+        event.target.value = ''
+        return
+    }
+    if (file.size > MAX_SIZE) {
+        fileError.value = 'ขนาดไฟล์ต้องไม่เกิน 20 MB'
+        selectedFile.value = null
+        event.target.value = ''
+        return
+    }
+
+    fileError.value = ''
+    uploadError.value = ''
+    selectedFile.value = file
+    if (!title.value) {
+        title.value = file.name.replace(/\.[^/.]+$/, "")
     }
 }
 
-function handleUpload() {
-  if (!selectedFile.value) {
-    alert('กรุณาเลือกไฟล์ PDF')
-    return
-  }
-  // Backend ต่อ
+async function handleUpload() {
+    if (!selectedFile.value) {
+        fileError.value = 'กรุณาเลือกไฟล์ PDF'
+        return
+    }
+
+    isUploading.value = true
+    uploadError.value = ''
+
+    const result = await store.uploadDocument({
+        file: selectedFile.value,
+        title: title.value,
+        subjectCode: subjectCode.value,
+    })
+
+    isUploading.value = false
+
+    if (result.success) {
+        router.push('/documents') // ไปดูรายการไฟล์ที่อัพโหลด
+    } else {
+        uploadError.value = result.message
+    }
+}
+
+function handleCancel() {
+    title.value = ''
+    subjectCode.value = ''
+    selectedFile.value = null
+    fileError.value = ''
+    uploadError.value = ''
+    router.back()
 }
 </script>
 
@@ -39,19 +88,19 @@ function handleUpload() {
             <div class="dropzone-box">
                 <div class="dropzone-inner">
                     <img :src="saebIcon" alt="SAEB" class="dropzone-logo" />
-                    <span class="dropzone-note">
-                        {{ selectedFile ? `Selected: ${selectedFile.name}` : 'รองรับเฉพาะ .pdf' }}
+                    <span class="dropzone-note" :class="{ 'is-error': fileError }">
+                        {{ fileError || (selectedFile ? `Selected: ${selectedFile.name}` : 'รองรับเฉพาะ .pdf') }}
                     </span>
                     
                     <!-- ปุ่มเลือกไฟล์ -->
-                    <button class="choose-file-btn" @click="triggerFileInput">Choose File</button>
+                    <button type="button" class="choose-file-btn" @click="triggerFileInput">Choose File</button>
                     
                     <!-- Hidden Input สำหรับเปิดหน้าต่างเลือกไฟล์ในเครื่อง -->
                     <input 
                         type="file" 
                         ref="fileInput" 
                         @change="handleFileChange" 
-                        accept=".pdf" 
+                        accept="application/pdf,.pdf" 
                         style="display: none;" 
                     />
                 </div>
@@ -61,17 +110,21 @@ function handleUpload() {
             <div class="form-section">
                 <div class="form-group">
                     <label class="form-label">Title</label>
-                    <input type="text" v-model="title" placeholder="Enter the title" class="form-input" />
+                    <input type="text" v-model="title" placeholder="Enter the title" maxlength="200" class="form-input" />
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">Subject Code</label>
-                    <input type="text" v-model="subjectCode" placeholder="Enter subject code" class="form-input" />
+                    <input type="text" v-model="subjectCode" placeholder="Enter subject code" maxlength="20" class="form-input" />
                 </div>
 
+                <p v-if="uploadError" class="upload-error" role="alert">{{ uploadError }}</p>
+
                 <div class="form-actions">
-                    <button class="cancel-btn">Cancle</button>
-                    <button class="submit-upload-btn" @click="handleUpload">Upload</button>
+                    <button type="button" class="cancel-btn" :disabled="isUploading" @click="handleCancel">Cancel</button>
+                    <button type="button" class="submit-upload-btn" :disabled="isUploading" @click="handleUpload">
+                        {{ isUploading ? 'Uploading...' : 'Upload' }}
+                    </button>
                 </div>
             </div>
         </div>
@@ -233,5 +286,25 @@ function handleUpload() {
 .submit-upload-btn:active {
     transform: translate(1px, 1px);
     box-shadow: 1px 1px 0px #000;
+}
+
+.dropzone-note.is-error {
+    color: #e63946;
+    font-weight: bold;
+}
+
+.upload-error {
+    margin: 0;
+    color: #e63946;
+    font-weight: bold;
+    text-align: right;
+}
+
+.cancel-btn:disabled,
+.submit-upload-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 2px 2px 0px #000;
 }
 </style>
