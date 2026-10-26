@@ -15,7 +15,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'saeb_jwt_secret_key_2026';
 
 // Helper: Hash Password ด้วย PBKDF2
 function hashPassword(password, salt) {
-  return crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+  return crypto.pbkdf2Sync(password, salt, 210000, 64, 'sha512').toString('hex');
 }
 
 // 1. API สำหรับสมัคร/สร้าง User ทดสอบลง DynamoDB
