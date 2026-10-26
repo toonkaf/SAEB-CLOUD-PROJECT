@@ -4,7 +4,10 @@ import apiClient from '@/services/api'
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem('saeb_token') || null)
-  const user = ref(JSON.parse(localStorage.getItem('saeb_user') || 'null'))
+  
+  // แก้ไข: ดึงค่ามาตรวจสอบสตริง 'undefined' ก่อน parse
+  const savedUser = localStorage.getItem('saeb_user')
+  const user = ref(savedUser && savedUser !== 'undefined' ? JSON.parse(savedUser) : null)
 
   // ฟังก์ชัน Login ยิงหา Backend Node.js
   async function login(student_id, password) {
