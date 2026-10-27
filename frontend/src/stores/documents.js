@@ -11,9 +11,12 @@ export function isPdf(file) {
 }
 
 export const useDocumentsStore = defineStore('documents', () => {
-  const documents = ref([]) // เอกสารเฉพาะของผู้ใช้คนนี้
-  const allDocuments = ref([]) // เอกสารของทุกคน
+  // รวม State ทั้งหมดไว้ด้านบน
+  const documents = ref([])
+  const allDocuments = ref([])
   const isLoading = ref(false)
+  const summaries = ref({})
+  const isAiLoading = ref(false)
 
   function authHeaders() {
     return { Authorization: `Bearer ${useAuthStore().token}` }
@@ -28,7 +31,6 @@ export const useDocumentsStore = defineStore('documents', () => {
     return error.response?.data?.message || fallback
   }
 
-  // ดึงเฉพาะเอกสารของผู้ใช้ปัจจุบัน
   async function fetchDocuments() {
     isLoading.value = true
     try {
@@ -37,23 +39,23 @@ export const useDocumentsStore = defineStore('documents', () => {
 
       const { data } = await apiClient.get('/documents/search', {
         headers: authHeaders(),
-        params: { uploader_id: currentUserId } // ส่ง uploader_id ไปกรองที่ Backend
+        params: { uploader_id: currentUserId }
       })
-      
+
       documents.value = data.documents.map((d) => {
         const rawDate = d.created_at || d.uploadedAt || d.uploaded_at
         const parsedDate = rawDate ? new Date(rawDate) : new Date()
-        
-        return { 
-          ...d, 
+
+        return {
+          ...d,
           id: d.document_id || d.id,
           size: d.file_size || d.size || 0,
           subjectCode: d.subject_code || d.subjectCode || '',
           fileName: d.file_name || d.fileName || '',
-          uploadedAt: isNaN(parsedDate.getTime()) ? new Date() : parsedDate 
+          uploadedAt: isNaN(parsedDate.getTime()) ? new Date() : parsedDate
         }
       })
-      
+
       return { success: true }
     } catch (error) {
       return { success: false, message: errorMessageOf(error, 'โหลดรายการเอกสารไม่สำเร็จ') }
@@ -62,26 +64,25 @@ export const useDocumentsStore = defineStore('documents', () => {
     }
   }
 
-  // ดึงเอกสารทั้งหมดของทุกคน (สำหรับหน้า Main/Public)
   async function fetchAllDocuments() {
     isLoading.value = true
     try {
       const { data } = await apiClient.get('/documents/search', { headers: authHeaders() })
-      
+
       allDocuments.value = data.documents.map((d) => {
         const rawDate = d.created_at || d.uploadedAt || d.uploaded_at
         const parsedDate = rawDate ? new Date(rawDate) : new Date()
-        
-        return { 
-          ...d, 
+
+        return {
+          ...d,
           id: d.document_id || d.id,
           size: d.file_size || d.size || 0,
           subjectCode: d.subject_code || d.subjectCode || '',
           fileName: d.file_name || d.fileName || '',
-          uploadedAt: isNaN(parsedDate.getTime()) ? new Date() : parsedDate 
+          uploadedAt: isNaN(parsedDate.getTime()) ? new Date() : parsedDate
         }
       })
-      
+
       return { success: true }
     } catch (error) {
       return { success: false, message: errorMessageOf(error, 'โหลดรายการเอกสารไม่สำเร็จ') }
@@ -95,9 +96,16 @@ export const useDocumentsStore = defineStore('documents', () => {
     if (file.size > MAX_SIZE) return { success: false, message: 'ขนาดไฟล์ต้องไม่เกิน 20 MB' }
 
     try {
+      // 1. สร้าง document_id ชั่วคราวแบบสุ่ม เพื่อให้ Backend นำไปสร้าง Path ไฟล์
+      const tempDocId = `doc_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
+
+      // 2. แนบ document_id เข้าไปตอนเรียก /upload-url
       const { data } = await apiClient.post(
         '/upload-url',
-        { fileName: file.name, size: file.size },
+        { 
+          fileName: file.name, 
+          size: file.size,
+        },
         { headers: authHeaders() }
       )
 
@@ -166,5 +174,34 @@ export const useDocumentsStore = defineStore('documents', () => {
     }
   }
 
-  return { documents, allDocuments, isLoading, fetchDocuments, fetchAllDocuments, uploadDocument, removeDocument, openDocument }
+  async function askAI(documentId) {
+    isAiLoading.value = true
+    try {
+      const { data } = await apiClient.post('/summarize',
+        { document_id: documentId },
+        { headers: authHeaders() }
+      )
+      summaries.value[documentId] = data.summary_text
+      return { success: true }
+    } catch (error) {
+      return { success: false, message: errorMessageOf(error, 'AI ไม่สามารถสรุปข้อมูลได้') }
+    } finally {
+      isAiLoading.value = false
+    }
+  }
+
+  // รวบรวมทุกตัวแปรและฟังก์ชันที่ต้องการให้คอมโพเนนต์อื่นใช้ นำมา Return ไว้ที่นี่จุดเดียว
+  return {
+    documents,
+    allDocuments,
+    isLoading,
+    summaries,
+    isAiLoading,
+    fetchDocuments,
+    fetchAllDocuments,
+    uploadDocument,
+    removeDocument,
+    openDocument,
+    askAI
+  }
 })
