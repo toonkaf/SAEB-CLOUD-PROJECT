@@ -35,7 +35,7 @@ const isAuthPage = computed(() => {
             </nav>
 
             <!-- ถ้าอยู่หน้า Login/Welcome จะแสดง Login, ถ้าอยู่หน้าอื่นจะแสดง Logout (ใช้คลาสเดิม login-link) -->
-            <RouterLink v-if="!route.meta.hideNav" to="'/login'" class="login-link">
+            <RouterLink v-if="!route.meta.hideNav" to="/login" class="login-link">
                 {{ isAuthPage ? 'Login' : 'Logout' }}
             </RouterLink>
         </header>
