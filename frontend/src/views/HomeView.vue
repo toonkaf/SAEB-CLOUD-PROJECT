@@ -10,7 +10,7 @@ function handleGoogleLogin() {
         <div class="home-hero">
             <img src="@/assets/images/MAIN_DES.png" class="home-des">
             <br>
-            <button class="banner" @click="$router.push('/login')">Login</button>
+            <button class="banner" @click="$router.push('/login')">Register & Login</button>
         </div>
         <div class="home-visual">
             <img src="@/assets/images/BG_ICON_MAIN.png" class="logo-home-bg">
