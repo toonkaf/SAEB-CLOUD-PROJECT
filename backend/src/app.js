@@ -27,6 +27,15 @@ app.post('/register', async (req, res) => {
   if (!student_id || !password || !email) {
     return res.status(400).json({ message: 'กรุณากรอกข้อมูลให้ครบถ้วน' });
   }
+  if (typeof student_id !== 'string' || typeof email !== 'string' || typeof password !== 'string') {
+    return res.status(400).json({ message: 'ข้อมูลไม่ถูกต้อง' });
+  }
+  if (!email.includes('@')) {
+    return res.status(400).json({ message: 'รูปแบบอีเมลไม่ถูกต้อง' });
+  }
+  if (password.length < 6) {
+    return res.status(400).json({ message: 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร' });
+  }
 
   const salt = crypto.randomBytes(16).toString('hex');
   const password_hash = hashPassword(password, salt);
@@ -40,12 +49,17 @@ app.post('/register', async (req, res) => {
         salt,
         password_hash,
         created_at: new Date().toISOString()
-      }
+      },
+      // ห้ามสมัครทับบัญชีที่มีอยู่แล้ว ยกเว้นบัญชีเก่าที่ไม่มี salt (login ไม่ได้อยู่แล้ว)
+      ConditionExpression: 'attribute_not_exists(student_id) OR attribute_not_exists(salt)'
     });
 
     await docClient.send(command);
     return res.status(201).json({ message: 'สร้างบัญชีผู้ใช้สำเร็จ' });
   } catch (error) {
+    if (error.name === 'ConditionalCheckFailedException') {
+      return res.status(409).json({ message: 'รหัสนักศึกษานี้ถูกใช้สมัครแล้ว' });
+    }
     console.error('Register Error:', error);
     return res.status(500).json({ message: 'ไม่สามารถบันทึกข้อมูลลง DynamoDB ได้', error: error.message });
   }
@@ -71,6 +85,11 @@ app.post('/login', async (req, res) => {
 
     if (!user) {
       return res.status(401).json({ message: 'ไม่พบรหัสนักศึกษานี้ในระบบ' });
+    }
+
+    // บัญชีที่ไม่มี salt/password_hash (เช่น เพิ่มมือใน DynamoDB) ตรวจรหัสผ่านไม่ได้
+    if (!user.salt || !user.password_hash) {
+      return res.status(401).json({ message: 'บัญชีนี้สร้างด้วยรูปแบบเก่า กรุณาสมัครสมาชิกใหม่' });
     }
 
     // ตรวจสอบ Password Hash

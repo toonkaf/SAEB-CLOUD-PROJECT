@@ -34,6 +34,17 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  // ฟังก์ชันสมัครสมาชิก ยิงหา POST /register
+  async function register(student_id, email, password) {
+    try {
+      const response = await apiClient.post('/register', { student_id, email, password })
+      return { success: true, message: response.data.message }
+    } catch (error) {
+      const message = error.response?.data?.message || error.response?.data?.error || 'เกิดข้อผิดพลาดในการสมัครสมาชิก'
+      return { success: false, message }
+    }
+  }
+
   // ฟังก์ชัน Logout
   function logout() {
     token.value = null
@@ -42,5 +53,5 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('saeb_user')
   }
 
-  return { token, user, login, logout }
+  return { token, user, login, register, logout }
 })

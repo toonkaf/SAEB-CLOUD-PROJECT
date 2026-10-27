@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth' // 1. อิมพอร์ต Pinia Store
+import { useAuthStore } from '@/stores/auth'
 
 const showPassword = ref(false)
 const studentId = ref('')
@@ -13,32 +13,41 @@ const errorMessage = ref('')
 const authStore = useAuthStore()
 const router = useRouter()
 
-// // 2. ฟังก์ชันรองรับการกด Login
-// async function handleLogin() {
-//     if (!studentId.value || !password.value) return
+// กด Sign up -> ยิง POST /register แล้วพาไปหน้า Login
+async function handleRegister() {
+    errorMessage.value = ''
 
-//     isLoading.value = true
-//     errorMessage.value = ''
+    const id = studentId.value.trim()
+    const mail = email.value.trim()
 
-//     // เรียกฟังก์ชัน login ใน Pinia Store (ยิงหา AWS Backend)
-//     const result = await authStore.login(studentId.value, password.value)
+    if (!id || !mail || !password.value) {
+        errorMessage.value = 'กรุณากรอกข้อมูลให้ครบถ้วน'
+        return
+    }
+    if (!mail.includes('@')) {
+        errorMessage.value = 'รูปแบบอีเมลไม่ถูกต้อง'
+        return
+    }
+    if (password.value.length < 6) {
+        errorMessage.value = 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร'
+        return
+    }
 
-//     isLoading.value = false
+    isLoading.value = true
+    const result = await authStore.register(id, mail, password.value)
+    isLoading.value = false
 
-//     if (result.success) {
-//         // เข้าสู่ระบบสำเร็จ ย้ายไปหน้า Dashboard
-//         router.push('/dashboard') // เปลี่ยน path เป็นหน้าหลักตามต้องการ
-//         router.push('/main') // เปลี่ยน path เป็นหน้าหลักตามต้องการ
-//     } else {
-//         // แสดงข้อความ Error ที่ Backend / DynamoDB ส่งกลับมา
-//         errorMessage.value = result.message
-//     }
-// }
-// </script>
+    if (result.success) {
+        router.push('/login')
+    } else {
+        errorMessage.value = result.message
+    }
+}
+</script>
 
 <template>
     <div class="regis-page">
-        <form class="regis-card" @submit.prevent="handleLogin">
+        <form class="regis-card" @submit.prevent="handleRegister">
             <div style="display: flex;">
                 <div style="margin-top: auto; margin-bottom: auto;">
                     <h1 class="title">Sign up</h1>
@@ -86,6 +95,8 @@ const router = useRouter()
             <button type="submit" class="login-btn" :disabled="isLoading">
                 {{ isLoading ? 'Signing up...' : 'Sign up' }}
             </button>
+
+            <RouterLink to="/login" class="back-link">Already have an account? Login</RouterLink>
         </form>
     </div>
 </template>
@@ -269,5 +280,12 @@ const router = useRouter()
 .login-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+}
+
+.back-link {
+    display: block;
+    margin-top: 16px;
+    text-align: center;
+    color: var(--maroon);
 }
 </style>
