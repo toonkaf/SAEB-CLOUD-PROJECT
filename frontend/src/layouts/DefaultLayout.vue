@@ -23,8 +23,7 @@ const isAuthPage = computed(() => {
             <RouterLink to="/" aria-label="Go to home" class="logo">
                 <img :src="saebIcon" alt="SAEB" class="logo-icon" />
             </RouterLink>
-            
-            <nav class="nav" aria-label="เมนูหลัก">
+            <nav v-if="!route.meta.hideNav" class="nav" aria-label="เมนูหลัก">
                 <RouterLink
                 v-for="item in navItems"
                 :key="item.to"
@@ -36,7 +35,7 @@ const isAuthPage = computed(() => {
             </nav>
 
             <!-- ถ้าอยู่หน้า Login/Welcome จะแสดง Login, ถ้าอยู่หน้าอื่นจะแสดง Logout (ใช้คลาสเดิม login-link) -->
-            <RouterLink :to="isAuthPage ? '/login' : '/login'" class="login-link">
+            <RouterLink v-if="!route.meta.hideNav" to="'/login'" class="login-link">
                 {{ isAuthPage ? 'Login' : 'Logout' }}
             </RouterLink>
         </header>

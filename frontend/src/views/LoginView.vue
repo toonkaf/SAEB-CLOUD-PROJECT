@@ -14,24 +14,24 @@ const router = useRouter()
 
 // 2. ฟังก์ชันรองรับการกด Login
 async function handleLogin() {
-  if (!studentId.value || !password.value) return
+    if (!studentId.value || !password.value) return
 
-  isLoading.value = true
-  errorMessage.value = ''
+    isLoading.value = true
+    errorMessage.value = ''
 
-  // เรียกฟังก์ชัน login ใน Pinia Store (ยิงหา AWS Backend)
-  const result = await authStore.login(studentId.value, password.value)
+    // เรียกฟังก์ชัน login ใน Pinia Store (ยิงหา AWS Backend)
+    const result = await authStore.login(studentId.value, password.value)
 
-  isLoading.value = false
+    isLoading.value = false
 
-  if (result.success) {
-    // เข้าสู่ระบบสำเร็จ ย้ายไปหน้า Dashboard
-    router.push('/dashboard') // เปลี่ยน path เป็นหน้าหลักตามต้องการ
-    router.push('/main') // เปลี่ยน path เป็นหน้าหลักตามต้องการ
-  } else {
-    // แสดงข้อความ Error ที่ Backend / DynamoDB ส่งกลับมา
-    errorMessage.value = result.message
-  }
+    if (result.success) {
+        // เข้าสู่ระบบสำเร็จ ย้ายไปหน้า Dashboard
+        router.push('/dashboard') // เปลี่ยน path เป็นหน้าหลักตามต้องการ
+        router.push('/main') // เปลี่ยน path เป็นหน้าหลักตามต้องการ
+    } else {
+        // แสดงข้อความ Error ที่ Backend / DynamoDB ส่งกลับมา
+        errorMessage.value = result.message
+    }
 }
 </script>
 
@@ -80,12 +80,27 @@ async function handleLogin() {
                 {{ isLoading ? 'Signing in...' : 'Login' }}
             </button>
             <!-- <a href="#" class="forgot" @click.prevent>Forgot your password?</a> -->
+            <RouterLink to="/regis" aria-label="Register" class="Regis">
+                    Create Your Account?
+            </RouterLink>
         </form>
     </div>
 </template>
 
 
 <style scoped>
+
+.Regis{
+    display: block;
+    text-align: center;
+    width: 60%;
+    height: 48px;
+    margin: 10px auto 0 auto;
+    border: none;
+    /* border-radius: 24px; */
+    cursor: pointer;
+}
+
 .login-page{
    /* width: 80vw; */
     min-height: 84vh;
