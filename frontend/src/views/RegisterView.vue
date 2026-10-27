@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth' // 1. อิมพอร์ต Pini
 
 const showPassword = ref(false)
 const studentId = ref('')
+const email = ref('')
 const password = ref('')
 const isLoading = ref(false)
 const errorMessage = ref('')
