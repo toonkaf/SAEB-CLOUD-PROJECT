@@ -101,7 +101,7 @@ export const useDocumentsStore = defineStore('documents', () => {
 
       // 2. แนบ document_id เข้าไปตอนเรียก /upload-url
       const { data } = await apiClient.post(
-        '/upload-url',
+        '/documents/upload-url',
         { 
           fileName: file.name, 
           size: file.size,
@@ -158,18 +158,17 @@ export const useDocumentsStore = defineStore('documents', () => {
   }
 
   async function openDocument(id) {
-    const tab = window.open('', '_blank')
     try {
+      // ขอลิงก์ให้ได้ก่อน แล้วค่อยเปิดแท็บ จะไม่มีแท็บว่างโผล่มาแล้วหายไปตอนเกิด error
       const { data } = await apiClient.get(`/documents/${id}/download-url`, { headers: authHeaders() })
+      const tab = window.open(data.url, '_blank')
       if (tab) {
         tab.opener = null
-        tab.location.href = data.url
       } else {
-        window.location.href = data.url
+        window.location.href = data.url // เบราว์เซอร์บล็อก popup: เปิดในแท็บเดิมแทน
       }
       return { success: true }
     } catch (error) {
-      if (tab) tab.close()
       return { success: false, message: errorMessageOf(error, 'เปิดเอกสารไม่สำเร็จ') }
     }
   }

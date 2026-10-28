@@ -14,6 +14,14 @@ const requireAuth = require('../middleware/auth');
 
 const router = express.Router();
 
+// key AWS หมดอายุ/ไม่ถูกต้อง -> บอกวิธีแก้ตรง ๆ แทนข้อความกว้าง ๆ
+function awsMessage(error, fallback) {
+  if (['ExpiredTokenException', 'ExpiredToken', 'RequestExpired'].includes(error?.name)) {
+    return 'AWS credentials หมดอายุ กรุณาอัปเดต key ใน backend/.env แล้วรีสตาร์ท backend';
+  }
+  return fallback;
+}
+
 // ตาราง saeb-documents: Partition Key = document_id (String) ไม่มี Sort Key
 // เจ้าของเอกสารเก็บในฟิลด์ student_id ธรรมดา
 const DOCUMENTS_TABLE = 'saeb-documents';
@@ -24,20 +32,26 @@ const URL_TTL_SECONDS = 300;
 router.use(requireAuth);
 
 // แปลง item ใน DynamoDB เป็นรูปแบบที่ส่งให้ frontend (ไม่เปิดเผย s3_key)
+// เจ้าของเอกสาร / ที่อยู่ไฟล์ใน S3 / เวลาอัพโหลด: รองรับทั้งชื่อฟิลด์ใหม่และเก่า
+const ownerOf = (item) => item.student_id || item.uploader_id;
+const s3KeyOf = (item) => item.s3_key || item.file_key;
+const timeOf = (item) => item.uploaded_at || item.created_at || '';
+
 function toDto(item) {
   return {
     id: item.document_id,
     title: item.title,
     subjectCode: item.subject_code,
     fileName: item.file_name,
-    size: item.size,
-    uploadedAt: item.uploaded_at,
+    size: item.size ?? item.file_size,
+    uploadedAt: timeOf(item),
+    uploader_id: ownerOf(item), // MainView ใช้ฟิลด์นี้แสดงชื่อผู้อัพโหลด
   };
 }
 
 // DTO สำหรับหน้า Main ที่ทุกคนเห็นเอกสารของกันและกัน
 function toPublicDto(item) {
-  return { ...toDto(item), author: item.student_id };
+  return { ...toDto(item), author: ownerOf(item) };
 }
 
 // 1. ขอ presigned URL เพื่ออัพโหลด PDF ขึ้น S3 โดยตรง
@@ -73,7 +87,10 @@ router.post('/upload-url', async (req, res) => {
 
 // 2. บันทึก metadata หลังอัพโหลดขึ้น S3 เสร็จ
 router.post('/', async (req, res) => {
-  const { title, subjectCode = '', s3Key, fileName } = req.body;
+  const { title } = req.body;
+  const subjectCode = req.body.subjectCode ?? req.body.subject_code ?? '';
+  const s3Key = req.body.s3Key ?? req.body.file_key;
+  const fileName = req.body.fileName ?? req.body.file_name;
   const { student_id } = req.user;
 
   if (typeof title !== 'string' || !title.trim()) {
@@ -126,7 +143,7 @@ async function scanDocuments(student_id) {
       new ScanCommand({
         TableName: DOCUMENTS_TABLE,
         ...(student_id && {
-          FilterExpression: 'student_id = :sid',
+          FilterExpression: 'student_id = :sid OR uploader_id = :sid',
           ExpressionAttributeValues: { ':sid': student_id },
         }),
         ExclusiveStartKey: lastKey,
@@ -138,7 +155,7 @@ async function scanDocuments(student_id) {
   return items;
 }
 
-const newestFirst = (a, b) => b.uploaded_at.localeCompare(a.uploaded_at);
+const newestFirst = (a, b) => timeOf(b).localeCompare(timeOf(a));
 
 // เอกสารของทุกคน สำหรับหน้า Main (ต้องล็อกอิน)
 router.get('/all', async (req, res) => {
@@ -148,6 +165,21 @@ router.get('/all', async (req, res) => {
   } catch (error) {
     console.error('List All Documents Error:', error);
     return res.status(500).json({ message: 'ไม่สามารถโหลดรายการเอกสารได้' });
+  }
+});
+
+// frontend เรียก GET /documents/search
+//   - ส่ง uploader_id มา  -> คืนเฉพาะเอกสารของ "ผู้ที่ล็อกอินอยู่" (ดูจาก token ไม่เชื่อค่าที่ client ส่ง)
+//   - ไม่ส่ง uploader_id -> คืนเอกสารของทุกคน (หน้า Main)
+router.get('/search', async (req, res) => {
+  try {
+    const onlyMine = req.query.uploader_id !== undefined;
+    const items = await scanDocuments(onlyMine ? req.user.student_id : undefined);
+    const documents = items.sort(newestFirst).map(onlyMine ? toDto : toPublicDto);
+    return res.status(200).json({ documents });
+  } catch (error) {
+    console.error('Search Documents Error:', error);
+    return res.status(500).json({ message: awsMessage(error, 'ไม่สามารถโหลดรายการเอกสารได้') });
   }
 });
 
@@ -174,7 +206,7 @@ async function findDocument(document_id) {
 // ดึงเฉพาะของผู้ใช้คนนี้ (ใช้ตอนลบ)
 async function findOwnDocument(student_id, document_id) {
   const item = await findDocument(document_id);
-  return item && item.student_id === student_id ? item : undefined;
+  return item && ownerOf(item) === student_id ? item : undefined;
 }
 
 // 4. ลิงก์ชั่วคราวสำหรับเปิดดู PDF
@@ -183,11 +215,14 @@ router.get('/:docId/download-url', async (req, res) => {
     const item = await findDocument(req.params.docId);
     if (!item) return res.status(404).json({ message: 'ไม่พบเอกสาร' });
 
+    const key = s3KeyOf(item);
+    if (!key) return res.status(404).json({ message: 'เอกสารนี้ไม่มีไฟล์ที่เก็บไว้ใน S3' });
+
     const url = await getSignedUrl(
       s3,
       new GetObjectCommand({
         Bucket: BUCKET,
-        Key: item.s3_key,
+        Key: key,
         ResponseContentType: 'application/pdf',
       }),
       { expiresIn: URL_TTL_SECONDS }
@@ -195,7 +230,7 @@ router.get('/:docId/download-url', async (req, res) => {
     return res.status(200).json({ url });
   } catch (error) {
     console.error('Download URL Error:', error);
-    return res.status(500).json({ message: 'ไม่สามารถเปิดเอกสารได้' });
+    return res.status(500).json({ message: awsMessage(error, 'ไม่สามารถเปิดเอกสารได้') });
   }
 });
 
@@ -206,7 +241,8 @@ router.delete('/:docId', async (req, res) => {
     const item = await findOwnDocument(student_id, req.params.docId);
     if (!item) return res.status(404).json({ message: 'ไม่พบเอกสาร' });
 
-    await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: item.s3_key }));
+    const key = s3KeyOf(item);
+    if (key) await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
     await docClient.send(
       new DeleteCommand({ TableName: DOCUMENTS_TABLE, Key: { document_id: item.document_id } })
     );
