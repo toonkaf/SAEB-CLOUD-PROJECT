@@ -49,12 +49,19 @@ const router = createRouter({
     routes,
 })
 
-// ต้อง app.use(pinia) ก่อน app.use(router) ใน main.js
 router.beforeEach((to) => {
     const authStore = useAuthStore()
-    if (to.meta.requiresAuth && !authStore.token) {
+    
+    // 1. ถ้าหน้านั้นต้องใช้สิทธิ์ (requiresAuth) แต่ไม่มี Token ให้เด้งไปหน้า login
+    if (to.meta.requiresAuth && !authStore.isAuthenticated) {
         return { name: 'login' }
     }
+
+    // 2. ถ้าล็อกอินอยู่แล้ว แต่อยู่ดีๆ กดเข้าหน้า login หรือ regis ให้เด้งไปหน้า main
+    if (authStore.isAuthenticated && (to.name === 'login' || to.name === 'regis')) {
+        return { name: 'main' }
+    }
+
     return true
 })
 
