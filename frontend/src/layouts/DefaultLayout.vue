@@ -11,7 +11,6 @@ const navItems = [
     { label: 'Home', to: '/main' },
     { label: 'Documents', to: '/documents' },
     { label: '+ Upload', to: '/uploads' },
-    { label: 'My SAEB', to: '/documents' }
 ]
 
 // ฟังก์ชันสำหรับกด Logout
@@ -127,6 +126,11 @@ const handleLogout = () => {
 .nav-link:hover{
     color: #F9F3E4;
     background-color: #000;
+}
+
+.nav:not(:hover) .nav-link.router-link-active {
+    background: #000;
+    color: #F9F3E4;
 }
 
 .login-link {

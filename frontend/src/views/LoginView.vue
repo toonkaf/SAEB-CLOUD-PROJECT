@@ -127,16 +127,16 @@ async function handleLogin() {
 }
 
 .title {
-  margin: 0;
-  font-size: 64px;
-  font-weight: 700;
-  line-height: 1.15;
+    margin: 0;
+    font-size: 64px;
+    font-weight: 700;
+    line-height: 1.15;
 }
 
 .subtitle {
-  margin: 4px 0 24px;
-  font-size: 17px;
-  font-weight: 500;
+    margin: 4px 0 24px;
+    font-size: 17px;
+    font-weight: 500;
 }
 
 .logo-login{
@@ -180,12 +180,12 @@ async function handleLogin() {
 
 .field::-ms-reveal,
 .field::-ms-clear {
-  display: none;
+    display: none;
 }
 
 .password {
-  position: relative;
-  margin-top: 20px;
+    position: relative;
+    margin-top: 20px;
 }
 
 .eye {
@@ -222,16 +222,16 @@ async function handleLogin() {
 }
 
 .forgot {
-  display: block;
-  margin: 22px 0 14px;
-  text-align: center;
-  color: var(--maroon);
-  font-size: 17px;
-  text-decoration: none;
+    display: block;
+    margin: 22px 0 14px;
+    text-align: center;
+    color: var(--maroon);
+    font-size: 17px;
+    text-decoration: none;
 }
 
 .forgot:hover {
-  text-decoration: underline;
+    text-decoration: underline;
 }
 
 @media (max-width: 900px) {

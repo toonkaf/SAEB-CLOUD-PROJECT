@@ -119,7 +119,7 @@ async function handleRegister() {
     --maroon: #8f1b16;
     width: 50vw;
     box-sizing: border-box;
-    padding: 50px 16px 50px 16px;
+    padding: 25px 16px 25px 16px;
     background: white;
     border: 1px solid #333;
     /* border-radius: 22px; */
@@ -183,12 +183,12 @@ async function handleRegister() {
 
 .field::-ms-reveal,
 .field::-ms-clear {
-  display: none;
+    display: none;
 }
 
 .password {
-  position: relative;
-  margin-top: 20px;
+    position: relative;
+    margin-top: 20px;
 }
 
 .eye {
@@ -226,16 +226,16 @@ async function handleRegister() {
 }
 
 .forgot {
-  display: block;
-  margin: 22px 0 14px;
-  text-align: center;
-  color: var(--maroon);
-  font-size: 17px;
-  text-decoration: none;
+    display: block;
+    margin: 22px 0 14px;
+    text-align: center;
+    color: var(--maroon);
+    font-size: 17px;
+    text-decoration: none;
 }
 
 .forgot:hover {
-  text-decoration: underline;
+    text-decoration: underline;
 }
 
 @media (max-width: 900px) {

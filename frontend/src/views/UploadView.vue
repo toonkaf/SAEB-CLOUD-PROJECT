@@ -145,7 +145,7 @@ async function handleUpload() {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 85vh;
+  height: 84vh;
   background-color: #fcf6e9;
   padding: 2rem; /* เพิ่ม padding เผื่อหน้าจอเล็ก */
 }
