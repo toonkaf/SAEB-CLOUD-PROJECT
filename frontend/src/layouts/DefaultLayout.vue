@@ -8,6 +8,7 @@ const route = useRoute();
 const navItems = [
     { label: 'Home', to: '/main' },
     { label: '+ Upload', to: '/uploads' },
+    { label: 'My SAEB', to: '/documents' }
 ]
 // มาแก้ path เอานะ
 
