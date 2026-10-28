@@ -10,8 +10,52 @@ export function isPdf(file) {
   return file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
 }
 
+// ฟังก์ชันสำหรับถอดรหัสข้อมูล JWT Token กรณี State หาย
+function parseJwt(token) {
+  try {
+    if (!token) return null
+    const base64Url = token.split('.')[1]
+    if (!base64Url) return null
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+    const jsonPayload = decodeURIComponent(
+      window.atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    )
+    return JSON.parse(jsonPayload)
+  } catch {
+    try {
+      return JSON.parse(window.atob(token.split('.')[1]))
+    } catch {
+      return null
+    }
+  }
+}
+
+function extractId(val) {
+  if (!val) return null
+  // กรณี val เป็น string หรือ number ตรงๆ (เช่น "670700123")
+  if (typeof val === 'string' || typeof val === 'number') {
+    const str = String(val).trim()
+    return str !== 'undefined' && str !== 'null' && str !== '' ? str : null
+  }
+  // กรณี val เป็น Object
+  if (typeof val === 'object') {
+    return (
+      val.student_id ||
+      val.studentId ||
+      val.id ||
+      val.user_id ||
+      val.username ||
+      val.email ||
+      null
+    )
+  }
+  return null
+}
+
 export const useDocumentsStore = defineStore('documents', () => {
-  // รวม State ทั้งหมดไว้ด้านบน
   const documents = ref([])
   const allDocuments = ref([])
   const isLoading = ref(false)
@@ -31,25 +75,63 @@ export const useDocumentsStore = defineStore('documents', () => {
     return error.response?.data?.message || fallback
   }
 
+  // ฟังก์ชันดึง User ID โดยใช้ Key saeb_user และ saeb_token ตามใน auth.js
+  function getCurrentUserId() {
+  const authStore = useAuthStore()
+
+  // 1. ดึงจาก authStore.user ใน Pinia
+  const fromStore = extractId(authStore.user)
+  if (fromStore) return fromStore
+
+  // 2. ดึงจาก LocalStorage 'saeb_user'
+  try {
+    const savedUser = localStorage.getItem('saeb_user')
+    if (savedUser && savedUser !== 'undefined') {
+      const parsed = JSON.parse(savedUser)
+      const fromLocal = extractId(parsed)
+      if (fromLocal) return fromLocal
+    }
+  } catch {
+    // กรณี saeb_user ใน localStorage ไม่ใช่ JSON (เป็นข้อความธรรมดา)
+    const rawUser = localStorage.getItem('saeb_user')
+    const fromRaw = extractId(rawUser)
+    if (fromRaw) return fromRaw
+  }
+
+  // 3. ถอดรหัสโดยตรงจาก JWT Token 'saeb_token'
+  const token = authStore.token || localStorage.getItem('saeb_token')
+  if (token) {
+    const decoded = parseJwt(token)
+    const fromToken = extractId(decoded)
+    if (fromToken) return fromToken
+  }
+
+  return null
+}
+
   async function fetchDocuments() {
     isLoading.value = true
     try {
-      const authStore = useAuthStore()
-      const currentUserId = authStore.user?.student_id || 'anonymous'
+      const currentUserId = getCurrentUserId()
+
+      if (!currentUserId || currentUserId === 'anonymous') {
+        documents.value = []
+        return { success: true }
+      }
 
       const { data } = await apiClient.get('/documents/search', {
         headers: authHeaders(),
         params: { uploader_id: currentUserId }
       })
 
-      documents.value = data.documents.map((d) => {
+      documents.value = (data.documents || []).map((d) => {
         const rawDate = d.created_at || d.uploadedAt || d.uploaded_at
         const parsedDate = rawDate ? new Date(rawDate) : new Date()
 
         return {
           ...d,
           id: d.document_id || d.id,
-          size: Number(d.file_size || d.size || d.fileSize || 0), // แก้ไข: เพิ่มดึงค่า fileSize และแปลงเป็น Number
+          size: Number(d.file_size || d.size || d.fileSize || 0),
           subjectCode: d.subject_code || d.subjectCode || '',
           fileName: d.file_name || d.fileName || '',
           uploadedAt: isNaN(parsedDate.getTime()) ? new Date() : parsedDate
@@ -69,14 +151,14 @@ export const useDocumentsStore = defineStore('documents', () => {
     try {
       const { data } = await apiClient.get('/documents/search', { headers: authHeaders() })
 
-      allDocuments.value = data.documents.map((d) => {
+      allDocuments.value = (data.documents || []).map((d) => {
         const rawDate = d.created_at || d.uploadedAt || d.uploaded_at
         const parsedDate = rawDate ? new Date(rawDate) : new Date()
 
         return {
           ...d,
           id: d.document_id || d.id,
-          size: Number(d.file_size || d.size || d.fileSize || 0), // แก้ไข: เพิ่มดึงค่า fileSize และแปลงเป็น Number
+          size: Number(d.file_size || d.size || d.fileSize || 0),
           subjectCode: d.subject_code || d.subjectCode || '',
           fileName: d.file_name || d.fileName || '',
           uploadedAt: isNaN(parsedDate.getTime()) ? new Date() : parsedDate
@@ -95,8 +177,12 @@ export const useDocumentsStore = defineStore('documents', () => {
     if (!isPdf(file)) return { success: false, message: 'อัพโหลดได้เฉพาะไฟล์ .pdf เท่านั้น' }
     if (file.size > MAX_SIZE) return { success: false, message: 'ขนาดไฟล์ต้องไม่เกิน 20 MB' }
 
+    const currentUserId = getCurrentUserId()
+    if (!currentUserId || currentUserId === 'anonymous') {
+      return { success: false, message: 'ไม่พบข้อมูลผู้ใช้งาน กรุณาล็อกอินใหม่อีกครั้ง' }
+    }
+
     try {
-      // 1. ขอ Presigned URL จาก Backend
       const { data } = await apiClient.post(
         '/upload-url',
         { 
@@ -109,7 +195,6 @@ export const useDocumentsStore = defineStore('documents', () => {
       const uploadUrl = data.uploadUrl || data.upload_url
       const fileKey = data.s3Key || data.file_key || data.key
 
-      // 2. อัปโหลดไฟล์ขึ้น S3 โดยใช้ Native fetch (ส่งเฉพาะ Content-Type ไม่ส่ง Authorization header)
       let putResponse
       try {
         putResponse = await window.fetch(uploadUrl, {
@@ -127,8 +212,6 @@ export const useDocumentsStore = defineStore('documents', () => {
         return { success: false, message: 'ส่งไฟล์ขึ้น S3 ไม่สำเร็จ' }
       }
 
-      // 3. บันทึกข้อมูลเอกสารลง DynamoDB
-      const authStore = useAuthStore()
       await apiClient.post(
         '/documents',
         {
@@ -137,10 +220,10 @@ export const useDocumentsStore = defineStore('documents', () => {
           file_key: fileKey,
           file_name: file.name,
           fileName: file.name,
-          file_size: file.size,  // แนบค่าขนาดไฟล์ครบทุกรูปแบบ key
+          file_size: file.size,
           fileSize: file.size,
           size: file.size,
-          uploader_id: authStore.user?.student_id || 'anonymous'
+          uploader_id: currentUserId
         },
         { headers: authHeaders() }
       )
@@ -162,19 +245,34 @@ export const useDocumentsStore = defineStore('documents', () => {
   }
 
   async function openDocument(id) {
-    try {
-      const { data } = await apiClient.get(`/documents/${id}/download-url`, { headers: authHeaders() })
-      const tab = window.open(data.url, '_blank')
-      if (tab) {
-        tab.opener = null
-      } else {
-        window.location.href = data.url
-      }
-      return { success: true }
-    } catch (error) {
-      return { success: false, message: errorMessageOf(error, 'เปิดเอกสารไม่สำเร็จ') }
-    }
+  if (!id) {
+    return { success: false, message: 'ไม่พบ ID ของเอกสาร' }
   }
+
+  // 1. เปิดแท็บใหม่ไว้ล่วงหน้าทันที เพื่อป้องกัน Browser บล็อก Popup หรือค้างที่ about:blank
+  const newTab = window.open('about:blank', '_blank')
+
+  try {
+    const { data } = await apiClient.get(`/documents/${id}/download-url`, { headers: authHeaders() })
+    
+    // ดึง URL โดยรองรับหลายรูปแบบ key
+    const downloadUrl = data.url || data.download_url || data.downloadUrl
+
+    if (downloadUrl && newTab) {
+      // 2. ส่งผู้ใช้ไปยัง S3 Presigned URL เมื่อดึงข้อมูลสำเร็จ
+      newTab.location.href = downloadUrl
+      return { success: true }
+    } else {
+      // ถ้าไม่ได้ URL ให้ปิดแท็บที่เปิดค้างไว้
+      if (newTab) newTab.close()
+      return { success: false, message: 'ไม่พบลิงก์สำหรับเปิดเอกสาร' }
+    }
+  } catch (error) {
+    // ถ้าเกิด Error ให้ปิดแท็บที่เปิดค้างไว้
+    if (newTab) newTab.close()
+    return { success: false, message: errorMessageOf(error, 'เปิดเอกสารไม่สำเร็จ') }
+  }
+}
 
   async function askAI(documentId) {
     isAiLoading.value = true

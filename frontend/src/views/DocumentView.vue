@@ -23,15 +23,18 @@ async function handleRemove(doc) {
   if (!result.success) errorMessage.value = result.message
 }
 
-// ใช้ปฏิทินพุทธ (พ.ศ.) ถ้าอยากได้ ค.ศ. ให้เปลี่ยน 'th-TH' เป็น 'th-TH-u-ca-gregory'
+// ใช้ปฏิทินพุทธ (พ.ศ.) พร้อมดักจับกรณีวันที่ไม่ถูกต้อง
 function formatDateTime(date) {
+  if (!date || !(date instanceof Date) || isNaN(date.getTime())) return '-'
   return new Intl.DateTimeFormat('th-TH', {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(date)
 }
 
+// เพิ่ม Safe Check ป้องกัน bytes เป็น undefined / null / NaN
 function formatSize(bytes) {
+  if (!bytes || isNaN(bytes) || bytes === 0) return '0.0 KB'
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
@@ -62,7 +65,9 @@ function formatSize(bytes) {
           </p>
           <p class="doc-meta">
             อัพโหลดเมื่อ
-            <time :datetime="doc.uploadedAt.toISOString()">{{ formatDateTime(doc.uploadedAt) }}</time>
+            <time :datetime="doc.uploadedAt && doc.uploadedAt.toISOString ? doc.uploadedAt.toISOString() : ''">
+              {{ formatDateTime(doc.uploadedAt) }}
+            </time>
           </p>
         </div>
         <div class="doc-actions">
