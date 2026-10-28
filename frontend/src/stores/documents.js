@@ -49,7 +49,7 @@ export const useDocumentsStore = defineStore('documents', () => {
         return {
           ...d,
           id: d.document_id || d.id,
-          size: d.file_size || d.size || 0,
+          size: Number(d.file_size || d.size || d.fileSize || 0), // แก้ไข: เพิ่มดึงค่า fileSize และแปลงเป็น Number
           subjectCode: d.subject_code || d.subjectCode || '',
           fileName: d.file_name || d.fileName || '',
           uploadedAt: isNaN(parsedDate.getTime()) ? new Date() : parsedDate
@@ -76,7 +76,7 @@ export const useDocumentsStore = defineStore('documents', () => {
         return {
           ...d,
           id: d.document_id || d.id,
-          size: d.file_size || d.size || 0,
+          size: Number(d.file_size || d.size || d.fileSize || 0), // แก้ไข: เพิ่มดึงค่า fileSize และแปลงเป็น Number
           subjectCode: d.subject_code || d.subjectCode || '',
           fileName: d.file_name || d.fileName || '',
           uploadedAt: isNaN(parsedDate.getTime()) ? new Date() : parsedDate
@@ -96,12 +96,9 @@ export const useDocumentsStore = defineStore('documents', () => {
     if (file.size > MAX_SIZE) return { success: false, message: 'ขนาดไฟล์ต้องไม่เกิน 20 MB' }
 
     try {
-      // 1. สร้าง document_id ชั่วคราวแบบสุ่ม เพื่อให้ Backend นำไปสร้าง Path ไฟล์
-      const tempDocId = `doc_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
-
-      // 2. แนบ document_id เข้าไปตอนเรียก /upload-url
+      // 1. ขอ Presigned URL จาก Backend
       const { data } = await apiClient.post(
-        '/documents/upload-url',
+        '/upload-url',
         { 
           fileName: file.name, 
           size: file.size,
@@ -112,11 +109,14 @@ export const useDocumentsStore = defineStore('documents', () => {
       const uploadUrl = data.uploadUrl || data.upload_url
       const fileKey = data.s3Key || data.file_key || data.key
 
+      // 2. อัปโหลดไฟล์ขึ้น S3 โดยใช้ Native fetch (ส่งเฉพาะ Content-Type ไม่ส่ง Authorization header)
       let putResponse
       try {
-        putResponse = await fetch(uploadUrl, {
+        putResponse = await window.fetch(uploadUrl, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/pdf' },
+          headers: { 
+            'Content-Type': 'application/pdf' 
+          },
           body: file,
         })
       } catch {
@@ -127,6 +127,7 @@ export const useDocumentsStore = defineStore('documents', () => {
         return { success: false, message: 'ส่งไฟล์ขึ้น S3 ไม่สำเร็จ' }
       }
 
+      // 3. บันทึกข้อมูลเอกสารลง DynamoDB
       const authStore = useAuthStore()
       await apiClient.post(
         '/documents',
@@ -135,7 +136,10 @@ export const useDocumentsStore = defineStore('documents', () => {
           subject_code: subjectCode,
           file_key: fileKey,
           file_name: file.name,
-          file_size: file.size,
+          fileName: file.name,
+          file_size: file.size,  // แนบค่าขนาดไฟล์ครบทุกรูปแบบ key
+          fileSize: file.size,
+          size: file.size,
           uploader_id: authStore.user?.student_id || 'anonymous'
         },
         { headers: authHeaders() }
@@ -159,13 +163,12 @@ export const useDocumentsStore = defineStore('documents', () => {
 
   async function openDocument(id) {
     try {
-      // ขอลิงก์ให้ได้ก่อน แล้วค่อยเปิดแท็บ จะไม่มีแท็บว่างโผล่มาแล้วหายไปตอนเกิด error
       const { data } = await apiClient.get(`/documents/${id}/download-url`, { headers: authHeaders() })
       const tab = window.open(data.url, '_blank')
       if (tab) {
         tab.opener = null
       } else {
-        window.location.href = data.url // เบราว์เซอร์บล็อก popup: เปิดในแท็บเดิมแทน
+        window.location.href = data.url
       }
       return { success: true }
     } catch (error) {
@@ -189,7 +192,6 @@ export const useDocumentsStore = defineStore('documents', () => {
     }
   }
 
-  // รวบรวมทุกตัวแปรและฟังก์ชันที่ต้องการให้คอมโพเนนต์อื่นใช้ นำมา Return ไว้ที่นี่จุดเดียว
   return {
     documents,
     allDocuments,
