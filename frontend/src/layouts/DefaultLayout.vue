@@ -1,4 +1,5 @@
 <script setup>
+import { computed } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import saebIcon from '@/assets/images/SAEB_ICON.png';
@@ -13,6 +14,9 @@ const navItems = [
     { label: '+ Upload', to: '/uploads' },
 ]
 
+// ซ่อนเมนูและปุ่ม Login/Logout เมื่อ route ตั้ง meta.hideNav หรืออยู่ที่หน้า Landing (/)
+const hideNav = computed(() => !!route.meta.hideNav || route.path === '/');
+
 // ฟังก์ชันสำหรับกด Logout
 const handleLogout = () => {
     authStore.logout();
@@ -26,7 +30,7 @@ const handleLogout = () => {
             <RouterLink to="/" aria-label="Go to home" class="logo">
                 <img :src="saebIcon" alt="SAEB" class="logo-icon" />
             </RouterLink>
-            <nav v-if="!route.meta.hideNav" class="nav" aria-label="เมนูหลัก">
+            <nav v-if="!hideNav" class="nav" aria-label="เมนูหลัก">
                 <RouterLink
                 v-for="item in navItems"
                 :key="item.to"
@@ -38,7 +42,7 @@ const handleLogout = () => {
             </nav>
 
             <!-- แสดงปุ่ม Logout เมื่อล็อกอินอยู่ และแสดง Login เมื่อไม่มี Session -->
-            <template v-if="!route.meta.hideNav">
+            <template v-if="!hideNav">
                 <button 
                     v-if="authStore.isAuthenticated" 
                     @click="handleLogout" 
@@ -91,8 +95,9 @@ const handleLogout = () => {
     margin-top: 0vh;
 }
 
+/* เดิม overflow: hidden ซึ่งตัดเนื้อหาที่ยาวเกินจอมือถือ เปลี่ยนให้ตัดเฉพาะแนวนอน */
 .app-main {
-    overflow: hidden;
+    overflow-x: hidden;
 }
 
 .logo {
@@ -151,15 +156,33 @@ const handleLogout = () => {
     text-decoration: underline;
 }
 
+/* มือถือ/แท็บเล็ตเล็ก: แถวบน = โลโก้ + Logout/Login, แถวล่าง = เมนูกระจายเต็มความกว้าง */
 @media (max-width: 720px) {
     .app-header {
-        padding: 0 0.5rem 1vh;
+        grid-template-columns: 1fr auto;
+        grid-template-areas:
+            "logo action"
+            "nav  nav";
+        row-gap: 0.5rem;
+        padding: 0 0.75rem 1vh;
+    }
+    .logo {
+        grid-area: logo;
+    }
+    .login-link {
+        grid-area: action;
     }
     .nav {
+        grid-area: nav;
+        width: 100%;
+        justify-content: space-between;
         gap: 0.25rem;
     }
     .nav-link {
-        padding: 0.4rem 0.6rem;
+        flex: 1;
+        text-align: center;
+        padding: 0.4rem 0.25rem;
+        font-size: 0.9rem;
     }
     .logo-icon {
         height: 5vh;
